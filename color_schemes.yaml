@@ -1,0 +1,38 @@
+color_schemes:
+  军事风格:
+    background: '#000000'
+    colormap: viridis
+    contour: '#00FF00'
+    corner: '#FFFF00'
+    cross: '#00FF00'
+    grid: '#003300'
+    highlight_contour: '#FFFFFF'
+    primary: '#00FF00'
+    scan_line: '#00FF00'
+    secondary: '#FFFF00'
+  赛博朋克:
+    background: '#000000'
+    colormap: inferno
+    contour: '#FF00FF'
+    corner: '#00FFFF'
+    cross: '#FF00FF'
+    grid: '#FF00FF'
+    highlight_contour: '#FFFFFF'
+    primary: '#FF00FF'
+    scan_line: '#00FFFF'
+    secondary: '#00FFFF'
+  默认:
+    background: '#000000'
+    colormap: plasma
+    contour: '#00FFFF'
+    corner: '#00FFFF'
+    cross: '#00FFFF'
+    grid: '#0000FF'
+    highlight_contour: '#FFFFFF'
+    primary: '#00FFFF'
+    scan_line: '#00FFFF'
+    secondary: '#FF7F00'
+map_scale:
+  height_km: 10.61
+  max_elevation_km: 1.33
+  width_km: 10.61

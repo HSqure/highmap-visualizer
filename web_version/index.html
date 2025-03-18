@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>科幻地形可视化器</title>
+  <!-- 引入Three.js库 -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <!-- 引入样式表 -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 预览区域 -->
+    <div class="preview-card">
+      <canvas id="terrainCanvas"></canvas>
+      <div id="terrainInfo" class="terrain-info"></div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+      <!-- 文件操作 -->
+      <div class="panel-section">
+        <h3>文件操作</h3>
+        <button id="loadHeightmapBtn">加载高度图</button>
+        <button id="generateRandomBtn">生成随机高度图</button>
+        <button id="saveImageBtn" class="primary">保存地形图像</button>
+        <input type="file" id="heightmapFileInput" style="display: none">
+      </div>
+
+      <!-- 地图比例尺 -->
+      <div class="panel-section">
+        <h3>地图比例尺</h3>
+        <div class="input-group">
+          <label>宽度 (km):</label>
+          <input type="number" id="widthKm" value="10">
+        </div>
+        <div class="input-group">
+          <label>高度 (km):</label>
+          <input type="number" id="heightKm" value="10">
+        </div>
+        <div class="input-group">
+          <label>最大海拔 (km):</label>
+          <input type="number" id="maxElevationKm" value="5">
+        </div>
+        <button id="applyScaleBtn">应用比例尺</button>
+      </div>
+
+      <!-- 渲染参数 -->
+      <div class="panel-section">
+        <h3>渲染参数</h3>
+        <div class="input-group">
+          <label>分辨率:</label>
+          <select id="resolution">
+            <option value="250">250</option>
+            <option value="500" selected>500</option>
+            <option value="1000">1000</option>
+            <option value="2000">2000</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>等高线数量:</label>
+          <select id="contourLevels">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20" selected>20</option>
+            <option value="30">30</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>显示网格:</label>
+          <input type="checkbox" id="showGrid" checked>
+        </div>
+        <div class="input-group">
+          <label>显示标签:</label>
+          <input type="checkbox" id="showLabels" checked>
+        </div>
+        <button id="applyRenderBtn">应用渲染参数</button>
+      </div>
+
+      <!-- 配色方案 -->
+      <div class="panel-section">
+        <h3>配色方案</h3>
+        <div class="input-group">
+          <label>配色方案:</label>
+          <select id="colorScheme">
+            <option value="cyberpunk" selected>赛博朋克</option>
+            <option value="neon">霓虹</option>
+            <option value="retro">复古</option>
+          </select>
+        </div>
+        <button id="editColorsBtn">编辑配色方案</button>
+        <button id="newColorSchemeBtn">新建配色方案</button>
+      </div>
+
+      <!-- 预览操作 -->
+      <div class="panel-section">
+        <button id="refreshBtn">刷新预览</button>
+        <button id="fullscreenBtn">全屏显示</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配色方案编辑器模态框 -->
+  <div id="colorEditorModal" class="modal">
+    <div class="modal-content">
+      <h2>编辑配色方案</h2>
+      <div class="color-editor"></div>
+      <div class="modal-footer">
+        <button id="saveColorEditBtn" class="primary">保存</button>
+        <button id="cancelColorEditBtn">取消</button>
+        <button id="closeColorEditorBtn" class="close">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 引入应用脚本 -->
+  <script src="js/config.js"></script>
+  <script src="js/heightmap.js"></script>
+  <script src="js/terrain-renderer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

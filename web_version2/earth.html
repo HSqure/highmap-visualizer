@@ -1,0 +1,1490 @@
+      
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极地气象预报系统 - 三维地球</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00a8ff;
+      --secondary: #0097e6;
+      --accent: #00d2d3;
+      --dark: #1e272e;
+      --light: #f5f6fa;
+      --danger: #ff3f34;
+      --warning: #ffa801;
+      --success: #05c46b;
+      --card-bg: rgba(30, 39, 46, 0.8);
+      --card-border: rgba(0, 168, 255, 0.3);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000;
+      color: var(--light);
+    }
+    
+    #container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+    }
+    
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+    }
+    
+    .title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background: var(--primary);
+      margin-right: 10px;
+    }
+    
+    .date-time {
+      font-size: 16px;
+      opacity: 0.8;
+      text-align: right;
+    }
+    
+    .controls-panel {
+      position: absolute;
+      top: 100px;
+      left: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      width: 280px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .panel-title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .btn {
+      background: rgba(0, 168, 255, 0.2);
+      color: var(--light);
+      border: 1px solid var(--primary);
+      border-radius: 5px;
+      padding: 8px 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex: 1;
+    }
+    
+    .btn:hover {
+      background: var(--primary);
+      color: var(--dark);
+    }
+    
+    .btn i {
+      font-size: 14px;
+    }
+    
+    .data-layers {
+      margin-top: 20px;
+    }
+    
+    .layer-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+    
+    .layer-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .layer-checkbox {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--primary);
+      border-radius: 3px;
+      margin-right: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .layer-checkbox:checked {
+      background: var(--primary);
+    }
+    
+    .layer-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      color: var(--dark);
+      font-size: 12px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .layer-label {
+      flex: 1;
+    }
+    
+    .layer-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      margin-left: 10px;
+    }
+    
+    .data-panel {
+      position: absolute;
+      top: 100px;
+      right: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      width: 320px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .data-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .data-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 168, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+    
+    .data-icon i {
+      font-size: 20px;
+      color: var(--primary);
+    }
+    
+    .data-content {
+      flex: 1;
+    }
+    
+    .data-label {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 3px;
+    }
+    
+    .data-value {
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    .data-unit {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-left: 5px;
+    }
+    
+    .station-info {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+      width: 280px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    
+    .station-info.visible {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+    
+    .station-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .station-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0, 168, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+    
+    .station-name {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .station-coords {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    
+    .timeline {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 15px 20px;
+      width: 60%;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .timeline-title {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    
+    .timeline-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .timeline-btn {
+      background: none;
+      border: none;
+      color: var(--light);
+      cursor: pointer;
+      font-size: 16px;
+      opacity: 0.7;
+      transition: all 0.3s;
+    }
+    
+    .timeline-btn:hover {
+      opacity: 1;
+      color: var(--primary);
+    }
+    
+    .timeline-slider {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .timeline-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 30%;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+    
+    .timeline-handle {
+      position: absolute;
+      top: 50%;
+      left: 30%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      background: var(--light);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .timeline-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding: 0 8px;
+    }
+    
+    .timeline-tick {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.5s;
+    }
+    
+    .loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 168, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 18px;
+      opacity: 0.8;
+    }
+    
+    .marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      margin-left: -10px;
+      margin-top: -10px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      transform: scale(0);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.5); opacity: 1; }
+      70% { transform: scale(0.8); opacity: 0.7; }
+      100% { transform: scale(0.5); opacity: 1; }
+    }
+    
+    .marker::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+    }
+    
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .legend-title {
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    
+    .legend-gradient {
+      height: 10px;
+      width: 100%;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      background: linear-gradient(to right, #00d2d3, #00a8ff, #0097e6, #ffa801, #ff3f34);
+    }
+    
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .legend-label {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+    
+    /* 粒子效果 */
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    /* 数据可视化效果 */
+    .data-visualization {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    /* 光晕效果 */
+    .glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(0, 168, 255, 0.2) 0%, rgba(0, 0, 0, 0) 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 1200px) {
+      .timeline {
+        width: 80%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .controls-panel, .data-panel {
+        width: 250px;
+      }
+      
+      .timeline {
+        width: 90%;
+      }
+      
+      .legend {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  <div class="glow"></div>
+  
+  <div class="header">
+    <div class="title">极地气象预报系统</div>
+    <div class="date-time">
+      <div id="current-date">2025年2月28日</div>
+      <div id="current-time">星期五 15:30:00</div>
+    </div>
+  </div>
+  
+  <div class="controls-panel">
+    <div class="panel-header">
+      <div class="panel-title">控制面板</div>
+      <i class="bi bi-gear"></i>
+    </div>
+    
+    <div class="btn-group">
+      <button class="btn" id="focusAntarctica">
+        <i class="bi bi-geo-alt"></i>
+        <span>南极洲</span>
+      </button>
+      <button class="btn" id="resetView">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span>重置</span>
+      </button>
+    </div>
+    
+    <div class="data-layers">
+      <div class="panel-title" style="margin-bottom: 10px;">数据图层</div>
+      
+      <div class="layer-item">
+        <input type="checkbox" class="layer-checkbox" id="layer-temp" checked>
+        <label class="layer-label" for="layer-temp">温度分布</label>
+        <div class="layer-color" style="background: linear-gradient(45deg, #00d2d3, #ff3f34);"></div>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" class="layer-checkbox" id="layer-wind">
+        <label class="layer-label" for="layer-wind">风速风向</label>
+        <div class="layer-color" style="background: linear-gradient(45deg, #00a8ff, #0097e6);"></div>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" class="layer-checkbox" id="layer-pressure">
+        <label class="layer-label" for="layer-pressure">气压场</label>
+        <div class="layer-color" style="background: linear-gradient(45deg, #ffa801, #ff3f34);"></div>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" class="layer-checkbox" id="layer-stations" checked>
+        <label class="layer-label" for="layer-stations">观测站点</label>
+        <div class="layer-color" style="background: var(--primary);"></div>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" class="layer-checkbox" id="layer-clouds" checked>
+        <label class="layer-label" for="layer-clouds">云层</label>
+        <div class="layer-color" style="background: rgba(255, 255, 255, 0.7);"></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="data-panel">
+    <div class="panel-header">
+      <div class="panel-title">南极洲气象数据</div>
+      <div style="font-size: 12px; opacity: 0.7;">实时更新</div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-thermometer-half"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">地表气温</div>
+        <div class="data-value">-26.8<span class="data-unit">°C</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-thermometer-low"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">2m气温</div>
+        <div class="data-value">-32.4<span class="data-unit">°C</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-wind"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">风速</div>
+        <div class="data-value">8.6<span class="data-unit">m/s</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-cloud-rain"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">降水量</div>
+        <div class="data-value">0.2<span class="data-unit">mm</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-speedometer"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">气压</div>
+        <div class="data-value">1012<span class="data-unit">hPa</span></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="station-info" id="station-info">
+    <div class="station-header">
+      <div class="station-icon">
+        <i class="bi bi-broadcast-pin"></i>
+      </div>
+      <div>
+        <div class="station-name">中山站</div>
+        <div class="station-coords">69°22'24.6"S, 76°22'14.0"E</div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon" style="width: 30px; height: 30px;">
+        <i class="bi bi-thermometer-half" style="font-size: 16px;"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">气温</div>
+        <div class="data-value">-28.5<span class="data-unit">°C</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon" style="width: 30px; height: 30px;">
+        <i class="bi bi-wind" style="font-size: 16px;"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">风速</div>
+        <div class="data-value">9.8<span class="data-unit">m/s</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item" style="margin-bottom: 0;">
+      <div class="data-icon" style="width: 30px; height: 30px;">
+        <i class="bi bi-moisture" style="font-size: 16px;"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">相对湿度</div>
+        <div class="data-value">75<span class="data-unit">%</span></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="timeline">
+    <div class="timeline-header">
+      <div class="timeline-title">时间轴 - 2025年2月28日</div>
+      <div class="timeline-controls">
+        <button class="timeline-btn" id="play-btn"><i class="bi bi-play-fill"></i></button>
+        <button class="timeline-btn" id="pause-btn"><i class="bi bi-pause-fill"></i></button>
+      </div>
+    </div>
+    
+    <div class="timeline-slider" id="timeline-slider">
+      <div class="timeline-progress" id="timeline-progress"></div>
+      <div class="timeline-handle" id="timeline-handle"></div>
+    </div>
+    
+    <div class="timeline-ticks">
+      <div class="timeline-tick">10:00</div>
+      <div class="timeline-tick">12:00</div>
+      <div class="timeline-tick">14:00</div>
+      <div class="timeline-tick">16:00</div>
+      <div class="timeline-tick">18:00</div>
+      <div class="timeline-tick">20:00</div>
+    </div>
+  </div>
+  
+  <div class="legend">
+    <div class="legend-title">温度分布 (°C)</div>
+    <div class="legend-gradient"></div>
+    <div class="legend-labels">
+      <div class="legend-label">-40</div>
+      <div class="legend-label">-30</div>
+      <div class="legend-label">-20</div>
+      <div class="legend-label">-10</div>
+      <div class="legend-label">0</div>
+    </div>
+  </div>
+  
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">加载中，请稍候...</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.9.1/dist/gsap.min.js"></script>
+  
+  <script>
+    // 等待资源加载
+    window.addEventListener('load', init);
+    
+    let scene, camera, renderer, earth, clouds, controls;
+    let antarcticaHighlight, temperatureLayer, windLayer, pressureLayer;
+    let stations = [];
+    let timelineProgress = 0.3;
+    let isPlaying = false;
+    let playInterval;
+    
+    function init() {
+      // 创建场景
+      scene = new THREE.Scene();
+      
+      // 创建相机
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 3;
+      
+      // 创建渲染器
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: true
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      document.getElementById('container').appendChild(renderer.domElement);
+      
+      // 添加环境光
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+      
+      // 添加定向光（模拟太阳光）
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(5, 3, 5);
+      scene.add(directionalLight);
+      
+      // 添加点光源（增强视觉效果）
+      const pointLight = new THREE.PointLight(0x00a8ff, 0.8, 10);
+      pointLight.position.set(-5, 2, -5);
+      scene.add(pointLight);
+      
+      // 创建地球
+      createEarth();
+      
+      // 创建南极洲高亮
+      createAntarcticaHighlight();
+      
+      // 创建数据可视化层
+      createDataLayers();
+      
+      // 创建站点标记
+      createStations();
+      
+      // 添加控制器
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.rotateSpeed = 0.5;
+      controls.minDistance = 1.5;
+      controls.maxDistance = 10;
+      
+      // 添加事件监听器
+      window.addEventListener('resize', onWindowResize);
+      document.getElementById('focusAntarctica').addEventListener('click', focusAntarctica);
+      document.getElementById('resetView').addEventListener('click', resetView);
+      
+      // 时间轴控制
+      setupTimelineControls();
+      
+      // 图层控制
+      setupLayerControls();
+      
+      // 隐藏加载提示
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+      }, 1500);
+      
+      // 开始动画循环
+      animate();
+      
+      // 初始化时聚焦南极洲
+      setTimeout(focusAntarctica, 2000);
+    }
+    
+    function createEarth() {
+      // 地球几何体
+      const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
+      
+      // 加载地球纹理
+      const textureLoader = new THREE.TextureLoader();
+      
+      // 地球表面纹理（卫星图像）
+      const earthTexture = textureLoader.load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg', function() {
+        renderer.render(scene, camera);
+      });
+      
+      // 地球凹凸纹理（地形）
+      const bumpMap = textureLoader.load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png', function() {
+        renderer.render(scene, camera);
+      });
+      
+      // 地球高光纹理（海洋反光）
+      const specularMap = textureLoader.load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-water.png', function() {
+        renderer.render(scene, camera);
+      });
+      
+      // 地球夜间光照纹理
+      const nightMap = textureLoader.load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg', function() {
+        renderer.render(scene, camera);
+      });
+      
+      // 地球材质
+      const earthMaterial = new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        bumpMap: bumpMap,
+        bumpScale: 0.05,
+        specularMap: specularMap,
+        specular: new THREE.Color(0x333333),
+        shininess: 15
+      });
+      
+      // 创建地球网格
+      earth = new THREE.Mesh(earthGeometry, earthMaterial);
+      scene.add(earth);
+      
+      // 添加云层
+      const cloudsTexture = textureLoader.load('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-clouds.png', function() {
+        renderer.render(scene, camera);
+      });
+      
+      const cloudsMaterial = new THREE.MeshPhongMaterial({
+        map: cloudsTexture,
+        transparent: true,
+        opacity: 0.4
+      });
+      
+      clouds = new THREE.Mesh(
+        new THREE.SphereGeometry(1.01, 64, 64),
+        cloudsMaterial
+      );
+      
+      scene.add(clouds);
+      
+      // 添加大气层光晕效果
+      const atmosphereGeometry = new THREE.SphereGeometry(1.15, 64, 64);
+      const atmosphereMaterial = new THREE.ShaderMaterial({
+        vertexShader: `
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vNormal;
+          void main() {
+            float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0);
+            gl_FragColor = vec4(0.1, 0.5, 1.0, 1.0) * intensity;
+          }
+        `,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        transparent: true
+      });
+      
+      const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+      scene.add(atmosphere);
+    }
+    
+    function createAntarcticaHighlight() {
+      // 创建南极洲高亮（使用更精确的形状）
+      const antarcticaGeometry = new THREE.CircleGeometry(0.3, 32);
+      const antarcticaMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00a8ff,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide
+      });
+      
+      antarcticaHighlight = new THREE.Mesh(antarcticaGeometry, antarcticaMaterial);
+      
+      // 将南极洲高亮放置在地球底部
+      antarcticaHighlight.position.set(0, -0.97, 0);
+      antarcticaHighlight.rotation.x = Math.PI / 2;
+      
+      scene.add(antarcticaHighlight);
+      
+      // 添加一个发光效果
+      const antarcticaGlowGeometry = new THREE.CircleGeometry(0.35, 32);
+      const antarcticaGlowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00a8ff,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
+      });
+      
+      const antarcticaGlow = new THREE.Mesh(antarcticaGlowGeometry, antarcticaGlowMaterial);
+      antarcticaGlow.position.set(0, -0.97, 0);
+      antarcticaGlow.rotation.x = Math.PI / 2;
+      
+      scene.add(antarcticaGlow);
+      
+      // 添加脉冲动画效果
+      const pulseTween = gsap.to(antarcticaGlowMaterial, {
+        opacity: 0.1,
+        duration: 1.5,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut"
+      });
+    }
+    
+    function createDataLayers() {
+      // 创建温度分布图层
+      const temperatureGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+      const temperatureMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0.6,
+        map: createTemperatureTexture()
+      });
+      
+      temperatureLayer = new THREE.Mesh(temperatureGeometry, temperatureMaterial);
+      scene.add(temperatureLayer);
+      
+      // 创建风速图层（初始隐藏）
+      const windGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+      const windMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        map: createWindTexture()
+      });
+      
+      windLayer = new THREE.Mesh(windGeometry, windMaterial);
+      scene.add(windLayer);
+      
+      // 创建气压图层（初始隐藏）
+      const pressureGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+      const pressureMaterial = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        map: createPressureTexture()
+      });
+      
+      pressureLayer = new THREE.Mesh(pressureGeometry, pressureMaterial);
+      scene.add(pressureLayer);
+    }
+    
+    function createTemperatureTexture() {
+      // 创建温度分布纹理（南极洲区域的热力图）
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // 清空画布
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 创建南极洲区域的温度分布
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, 
+        canvas.height * 0.85, 
+        0, 
+        canvas.width / 2, 
+        canvas.height * 0.85, 
+        canvas.width * 0.3
+      );
+      
+      gradient.addColorStop(0, 'rgba(255, 63, 52, 0.7)');    // 中心较暖
+      gradient.addColorStop(0.3, 'rgba(255, 168, 1, 0.6)');  // 中温区域
+      gradient.addColorStop(0.6, 'rgba(0, 151, 230, 0.5)');  // 较冷区域
+      gradient.addColorStop(1, 'rgba(0, 210, 211, 0.3)');    // 边缘最冷
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 创建纹理
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    }
+    
+    function createWindTexture() {
+      // 创建风速分布纹理
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // 清空画布
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 创建南极洲区域的风速分布
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2, 
+        canvas.height * 0.85, 
+        0, 
+        canvas.width / 2, 
+        canvas.height * 0.85, 
+        canvas.width * 0.3
+      );
+      
+      gradient.addColorStop(0, 'rgba(0, 168, 255, 0.7)');
+      gradient.addColorStop(0.5, 'rgba(0, 151, 230, 0.5)');
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 添加风向箭头
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.lineWidth = 2;
+      
+      for (let i = 0; i < 20; i++) {
+        const x = canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.5;
+        const y = canvas.height * 0.85 + (Math.random() - 0.5) * canvas.height * 0.3;
+        const length = 10 + Math.random() * 20;
+        const angle = Math.random() * Math.PI * 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+        ctx.stroke();
+        
+        // 箭头
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+        ctx.lineTo(
+          x + Math.cos(angle) * length - Math.cos(angle + Math.PI / 4) * 5,
+          y + Math.sin(angle) * length - Math.sin(angle + Math.PI / 4) * 5
+        );
+        ctx.stroke();
+      }
+      
+      // 创建纹理
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    }
+    
+    function createPressureTexture() {
+      // 创建气压分布纹理
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // 清空画布
+      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // 创建南极洲区域的气压分布
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height * 0.85;
+      
+      // 绘制等压线
+      ctx.strokeStyle = 'rgba(255, 168, 1, 0.5)';
+      ctx.lineWidth = 1.5;
+      
+      for (let radius = 20; radius < canvas.width * 0.3; radius += 40) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      // 添加高低压标记
+      ctx.fillStyle = 'rgba(255, 63, 52, 0.7)';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = 'rgba(0, 151, 230, 0.7)';
+      ctx.beginPath();
+      ctx.arc(centerX + 100, centerY - 50, 15, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // 创建纹理
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    }
+    
+    function createStations() {
+      // 南极洲观测站点数据
+      const stationData = [
+        { name: "中山站", lat: -69.3735, lon: 76.3725, temp: -28.5, wind: 9.8, humidity: 75 },
+        { name: "长城站", lat: -62.2167, lon: -58.9667, temp: -15.2, wind: 12.3, humidity: 82 },
+        { name: "昆仑站", lat: -80.4167, lon: 77.1167, temp: -42.8, wind: 5.6, humidity: 65 },
+        { name: "泰山站", lat: -73.8614, lon: 76.9764, temp: -32.1, wind: 8.4, humidity: 70 }
+      ];
+      
+      // 将站点添加到地球上
+      stationData.forEach(station => {
+        // 将经纬度转换为3D坐标
+        const phi = (90 - station.lat) * (Math.PI / 180);
+        const theta = (station.lon + 180) * (Math.PI / 180);
+        
+        const x = -1 * Math.sin(phi) * Math.cos(theta);
+        const y = Math.cos(phi);
+        const z = Math.sin(phi) * Math.sin(theta);
+        
+        // 创建站点标记
+        const stationGeometry = new THREE.SphereGeometry(0.01, 16, 16);
+        const stationMaterial = new THREE.MeshBasicMaterial({ color: 0x00a8ff });
+        
+        const stationMesh = new THREE.Mesh(stationGeometry, stationMaterial);
+        stationMesh.position.set(x, y, z);
+        stationMesh.scale.set(1, 1, 1);
+        stationMesh.userData = station;
+        
+        scene.add(stationMesh);
+        stations.push(stationMesh);
+        
+        // 添加发光效果
+        const glowGeometry = new THREE.SphereGeometry(0.015, 16, 16);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+          color: 0x00a8ff,
+          transparent: true,
+          opacity: 0.5
+        });
+        
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        stationMesh.add(glow);
+        
+        // 添加脉冲动画
+        gsap.to(glow.scale, {
+          x: 1.5,
+          y: 1.5,
+          z: 1.5,
+          duration: 1 + Math.random(),
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut"
+        });
+      });
+    }
+    
+    function setupTimelineControls() {
+      const timelineSlider = document.getElementById('timeline-slider');
+      const timelineProgress = document.getElementById('timeline-progress');
+      const timelineHandle = document.getElementById('timeline-handle');
+      
+      // 设置时间轴初始位置
+      timelineProgress.style.width = `${timelineProgress * 100}%`;
+      timelineHandle.style.left = `${timelineProgress * 100}%`;
+      
+      // 添加时间轴拖动功能
+      let isDragging = false;
+      
+      timelineSlider.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        updateTimelinePosition(e);
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          updateTimelinePosition(e);
+        }
+      });
+      
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+      
+      // 播放/暂停控制
+      document.getElementById('play-btn').addEventListener('click', () => {
+        if (!isPlaying) {
+          startPlayback();
+        }
+      });
+      
+      document.getElementById('pause-btn').addEventListener('click', () => {
+        stopPlayback();
+      });
+    }
+    
+    function updateTimelinePosition(e) {
+      const timelineSlider = document.getElementById('timeline-slider');
+      const timelineProgress = document.getElementById('timeline-progress');
+      const timelineHandle = document.getElementById('timeline-handle');
+      
+      const rect = timelineSlider.getBoundingClientRect();
+      let progress = (e.clientX - rect.left) / rect.width;
+      
+      // 限制在0-1范围内
+      progress = Math.max(0, Math.min(1, progress));
+      
+      // 更新进度条和手柄位置
+      timelineProgress.style.width = `${progress * 100}%`;
+      timelineHandle.style.left = `${progress * 100}%`;
+      
+      // 更新全局进度变量
+      timelineProgress = progress;
+      
+      // 根据时间轴位置更新数据
+      updateDataByTime(progress);
+    }
+    
+    function startPlayback() {
+      isPlaying = true;
+      
+      // 清除之前的定时器
+      if (playInterval) {
+        clearInterval(playInterval);
+      }
+      
+      // 设置定时器，每100毫秒更新一次进度
+      playInterval = setInterval(() => {
+        const timelineProgress = document.getElementById('timeline-progress');
+        const timelineHandle = document.getElementById('timeline-handle');
+        
+        // 增加进度
+        timelineProgress += 0.005;
+        
+        // 如果到达末尾，重置到开始
+        if (timelineProgress >= 1) {
+          timelineProgress = 0;
+        }
+        
+        // 更新UI
+        timelineProgress.style.width = `${timelineProgress * 100}%`;
+        timelineHandle.style.left = `${timelineProgress * 100}%`;
+        
+        // 更新数据
+        updateDataByTime(timelineProgress);
+      }, 100);
+    }
+    
+    function stopPlayback() {
+      isPlaying = false;
+      
+      if (playInterval) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+    }
+    
+    function updateDataByTime(progress) {
+      // 根据时间轴位置更新数据
+      // 这里可以添加实际的数据更新逻辑
+      
+      // 示例：更新温度数据
+      const baseTemp = -26.8;
+      const tempVariation = Math.sin(progress * Math.PI * 2) * 5;
+      const newTemp = (baseTemp + tempVariation).toFixed(1);
+      
+      document.querySelector('.data-panel .data-item:nth-child(2) .data-value').innerHTML = 
+        `${newTemp}<span class="data-unit">°C</span>`;
+      
+      // 更新风速数据
+      const baseWind = 8.6;
+      const windVariation = Math.cos(progress * Math.PI * 2) * 3;
+      const newWind = (baseWind + windVariation).toFixed(1);
+      
+      document.querySelector('.data-panel .data-item:nth-child(4) .data-value').innerHTML = 
+        `${newWind}<span class="data-unit">m/s</span>`;
+      
+      // 更新云层旋转
+      if (clouds) {
+        clouds.rotation.y = progress * Math.PI * 2;
+      }
+    }
+    
+    function setupLayerControls() {
+      // 温度图层控制
+      document.getElementById('layer-temp').addEventListener('change', (e) => {
+        if (e.target.checked) {
+          gsap.to(temperatureLayer.material, { opacity: 0.6, duration: 0.5 });
+          document.querySelector('.legend-title').textContent = '温度分布 (°C)';
+          document.querySelector('.legend-gradient').style.background = 'linear-gradient(to right, #00d2d3, #00a8ff, #0097e6, #ffa801, #ff3f34)';
+        } else {
+          gsap.to(temperatureLayer.material, { opacity: 0, duration: 0.5 });
+        }
+      });
+      
+      // 风速图层控制
+      document.getElementById('layer-wind').addEventListener('change', (e) => {
+        if (e.target.checked) {
+          gsap.to(windLayer.material, { opacity: 0.6, duration: 0.5 });
+          gsap.to(temperatureLayer.material, { opacity: 0, duration: 0.5 });
+          document.getElementById('layer-temp').checked = false;
+          document.getElementById('layer-pressure').checked = false;
+          document.querySelector('.legend-title').textContent = '风速分布 (m/s)';
+          document.querySelector('.legend-gradient').style.background = 'linear-gradient(to right, #ffffff, #00a8ff, #0097e6)';
+        } else {
+          gsap.to(windLayer.material, { opacity: 0, duration: 0.5 });
+        }
+      });
+      
+      // 气压图层控制
+      document.getElementById('layer-pressure').addEventListener('change', (e) => {
+        if (e.target.checked) {
+          gsap.to(pressureLayer.material, { opacity: 0.6, duration: 0.5 });
+          gsap.to(temperatureLayer.material, { opacity: 0, duration: 0.5 });
+          document.getElementById('layer-temp').checked = false;
+          document.getElementById('layer-wind').checked = false;
+          document.querySelector('.legend-title').textContent = '气压分布 (hPa)';
+          document.querySelector('.legend-gradient').style.background = 'linear-gradient(to right, #0097e6, #ffa801, #ff3f34)';
+        } else {
+          gsap.to(pressureLayer.material, { opacity: 0, duration: 0.5 });
+        }
+      });
+      
+      // 站点图层控制
+      document.getElementById('layer-stations').addEventListener('change', (e) => {
+        stations.forEach(station => {
+          station.visible = e.target.checked;
+        });
+      });
+      
+      // 云层控制
+      document.getElementById('layer-clouds').addEventListener('change', (e) => {
+        if (e.target.checked) {
+          gsap.to(clouds.material, { opacity: 0.4, duration: 0.5 });
+        } else {
+          gsap.to(clouds.material, { opacity: 0, duration: 0.5 });
+        }
+      });
+    }
+    
+    function focusAntarctica() {
+      // 动画过渡到南极洲视角
+      gsap.to(camera.position, {
+        x: 0,
+        y: -3,
+        z: 0.5,
+        duration: 2,
+        ease: "power2.inOut",
+        onUpdate: function() {
+          camera.lookAt(0, 0, 0);
+        }
+      });
+      
+      // 显示站点信息
+      setTimeout(() => {
+        document.getElementById('station-info').classList.add('visible');
+      }, 2000);
+    }
+    
+    function resetView() {
+      // 动画过渡到默认视角
+      gsap.to(camera.position, {
+        x: 0,
+        y: 0,
+        z: 3,
+        duration: 2,
+        ease: "power2.inOut",
+        onUpdate: function() {
+          camera.lookAt(0, 0, 0);
+        }
+      });
+      
+      // 隐藏站点信息
+      document.getElementById('station-info').classList.remove('visible');
+    }
+    
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // 缓慢旋转地球（当不在南极洲视角时）
+      if (camera.position.y > -2) {
+        earth.rotation.y += 0.0005;
+        if (clouds) {
+          clouds.rotation.y += 0.0008;
+        }
+      }
+      
+      // 更新控制器
+      controls.update();
+      
+      // 更新时间
+      updateTime();
+      
+      // 渲染场景
+      renderer.render(scene, camera);
+    }
+    
+    function updateTime() {
+      // 更新当前时间显示
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      
+      document.getElementById('current-time').textContent = 
+        `星期五 ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // 添加射线检测，用于点击站点显示信息
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    window.addEventListener('click', (event) => {
+      // 计算鼠标位置的标准化设备坐标
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      // 更新射线
+      raycaster.setFromCamera(mouse, camera);
+      
+      // 检测射线与站点的交叉
+      const intersects = raycaster.intersectObjects(stations);
+      
+      if (intersects.length > 0) {
+        const station = intersects[0].object.userData;
+        
+        // 更新站点信息面板
+        document.querySelector('.station-name').textContent = station.name;
+        document.querySelector('.station-coords').textContent = 
+          `${Math.abs(station.lat)}°${station.lat < 0 ? 'S' : 'N'}, ${Math.abs(station.lon)}°${station.lon < 0 ? 'W' : 'E'}`;
+        
+        document.querySelector('.station-info .data-item:nth-child(2) .data-value').innerHTML = 
+          `${station.temp}<span class="data-unit">°C</span>`;
+        
+        document.querySelector('.station-info .data-item:nth-child(3) .data-value').innerHTML = 
+          `${station.wind}<span class="data-unit">m/s</span>`;
+        
+        document.querySelector('.station-info .data-item:nth-child(4) .data-value').innerHTML = 
+          `${station.humidity}<span class="data-unit">%</span>`;
+        
+        // 显示站点信息面板
+        document.getElementById('station-info').classList.add('visible');
+      }
+    });
+  </script>
+</body>
+</html>
+
+    

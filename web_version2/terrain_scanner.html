@@ -1,0 +1,2850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地形扫描系统</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00a8ff;
+      --secondary: #0097e6;
+      --accent: #FF7F00;
+      --accent-light: #FF9F00;
+      --dark: #000000;
+      --light: #f5f6fa;
+      --highlight: #00ffff;
+      --card-bg: rgba(0, 0, 0, 0.8);
+      --card-border: rgba(255, 127, 0, 0.5);
+      --grid-color: rgba(0, 255, 255, 0.3);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Orbitron', 'Noto Sans SC', sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000;
+      color: var(--light);
+    }
+    
+    #container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%);
+      border-bottom: 1px solid var(--accent);
+    }
+    
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+    
+    .title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 24px;
+      background: var(--accent);
+      margin-right: 10px;
+    }
+    
+    .date-time {
+      font-size: 16px;
+      opacity: 0.8;
+      text-align: right;
+      color: var(--accent);
+    }
+    
+    .controls-panel {
+      position: absolute;
+      top: 100px;
+      left: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 20px;
+      width: 320px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-label {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .control-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--accent);
+      color: var(--light);
+      padding: 8px;
+      border-radius: 3px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .control-input:focus {
+      outline: none;
+      border-color: var(--accent-light);
+    }
+
+    .grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      border: 1px solid var(--grid-color);
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--accent);
+      color: var(--accent);
+    }
+    
+    .panel-title {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .btn {
+      background: rgba(255, 127, 0, 0.2);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      padding: 8px 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      flex: 1;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
+    }
+    
+    .btn:hover {
+      background: var(--accent);
+      color: var(--dark);
+    }
+    
+    .btn i {
+      font-size: 14px;
+    }
+    
+    .data-layers {
+      margin-top: 20px;
+    }
+    
+    .layer-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 3px;
+      transition: all 0.3s;
+    }
+    
+    .layer-item:hover {
+      background: rgba(255, 127, 0, 0.1);
+    }
+    
+    .layer-checkbox {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--accent);
+      border-radius: 3px;
+      margin-right: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .layer-checkbox:checked {
+      background: var(--accent);
+    }
+    
+    .layer-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      color: var(--dark);
+      font-size: 12px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .layer-label {
+      flex: 1;
+      color: var(--accent);
+    }
+    
+    .data-panel {
+      position: absolute;
+      top: 100px;
+      right: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 20px;
+      width: 320px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .data-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .data-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 3px;
+      background: rgba(255, 127, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+    
+    .data-icon i {
+      font-size: 20px;
+      color: var(--accent);
+    }
+    
+    .data-content {
+      flex: 1;
+    }
+    
+    .data-label {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-bottom: 3px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    
+    .data-value {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--accent-light);
+    }
+    
+    .data-unit {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-left: 5px;
+    }
+    
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .legend-title {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    
+    .legend-gradient {
+      height: 10px;
+      width: 100%;
+      border-radius: 3px;
+      margin-bottom: 5px;
+      background: linear-gradient(to right, #00d2d3, #00a8ff, #0097e6, #ffa801, #ff3f34);
+    }
+    
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .legend-label {
+      font-size: 12px;
+      opacity: 0.7;
+      color: var(--accent);
+    }
+    
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.5s;
+    }
+    
+    .loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 127, 0, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      font-size: 18px;
+      opacity: 0.8;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: rgba(0, 255, 255, 0.5);
+      box-shadow: 0 0 10px 3px rgba(0, 255, 255, 0.3);
+      z-index: 50;
+      animation: scan 8s linear infinite;
+    }
+    
+    @keyframes scan {
+      0% { top: 0; }
+      100% { top: 100%; }
+    }
+    
+    .corner-decoration {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-style: solid;
+      border-color: var(--accent);
+      z-index: 90;
+    }
+    
+    .corner-tl {
+      top: 20px;
+      left: 20px;
+      border-width: 3px 0 0 3px;
+    }
+    
+    .corner-tr {
+      top: 20px;
+      right: 20px;
+      border-width: 3px 3px 0 0;
+    }
+    
+    .corner-bl {
+      bottom: 20px;
+      left: 20px;
+      border-width: 0 0 3px 3px;
+    }
+    
+    .corner-br {
+      bottom: 20px;
+      right: 20px;
+      border-width: 0 3px 3px 0;
+    }
+    
+    .status-text {
+      position: absolute;
+      bottom: 80px;
+      left: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 15px;
+      color: var(--accent);
+      font-size: 14px;
+      letter-spacing: 1px;
+      z-index: 100;
+    }
+    
+    .status-text span {
+      color: var(--highlight);
+    }
+    
+    .color-selector {
+      margin-top: 15px;
+    }
+    
+    .color-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .color-radio {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      margin-right: 10px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .color-radio:checked {
+      background: var(--accent);
+    }
+    
+    .color-radio:checked::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--dark);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .color-label {
+      flex: 1;
+      color: var(--accent);
+      font-size: 14px;
+    }
+    
+    .color-preview {
+      width: 24px;
+      height: 16px;
+      border-radius: 3px;
+      margin-left: 10px;
+    }
+    
+    .slider-container {
+      margin: 15px 0;
+    }
+    
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      color: var(--accent);
+      font-size: 14px;
+    }
+    
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 127, 0, 0.2);
+      outline: none;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    
+    .slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+    
+    .scan-complete {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--accent);
+      border-radius: 5px;
+      padding: 10px 15px;
+      color: var(--accent-light);
+      font-size: 14px;
+      letter-spacing: 1px;
+      z-index: 100;
+    }
+    
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 50px 50px;
+      opacity: 0.3;
+    }
+    
+    /* 添加网格交点光点 */
+    .grid-points {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 11;
+    }
+    
+    .grid-point {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background-color: var(--highlight);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 5px var(--highlight), 0 0 10px var(--highlight);
+    }
+    .mouse-position {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      padding: 8px 15px;
+      border-radius: 3px;
+      color: var(--accent);
+      font-size: 10px;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .crosshair {
+      position: absolute;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .crosshair-h,
+    .crosshair-v {
+      position: absolute;
+      background: var(--highlight);
+    }
+
+    .crosshair-h {
+      width: 40px;
+      height: 2px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .crosshair-v {
+      width: 2px;
+      height: 40px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    /* 添加十字锁定动画效果 */
+    .crosshair-circle {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--highlight);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+    /* 添加缩略图样式 */
+    .minimap-panel {
+      position: absolute;
+      top: 510px; /* 数据面板下方 */
+      right: 30px; /* 改为右侧对齐 */
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 15px;
+      width: 320px; /* 与数据面板宽度一致 */
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+    }
+    
+    .minimap-container {
+      width: 290px; /* 调整宽度以适应面板 */
+      height: 290px;
+      background-color: #000;
+      border: 1px solid var(--grid-color);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .minimap-title {
+      color: var(--accent);
+      font-size: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .minimap-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--accent);
+      margin-right: 8px;
+    }
+    
+    .minimap-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+      background-size: 47.5px 47.5px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+    
+    .minimap-canvas {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .minimap-viewport {
+      position: absolute;
+      border: 1px solid var(--accent);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .save-btn {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--accent);
+      padding: 8px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      transition: all 0.3s;
+    }
+
+    .save-btn:hover {
+      background: var(--accent);
+      color: var(--dark);
+    }
+    
+    .contour-line {
+      stroke: var(--highlight);
+      stroke-width: 1px;
+      fill: none;
+      opacity: 0.6;
+    }
+    
+    .contour-line-highlight {
+      stroke: #ffffff;
+      stroke-width: 1.5px;
+      fill: none;
+      opacity: 0.8;
+    }
+    
+    .contour-label {
+      fill: #ffffff;
+      font-size: 8px;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+    
+    .cross-point {
+      stroke: var(--highlight);
+      stroke-width: 1px;
+    }
+    
+    .file-input {
+      display: none;
+    }
+    
+    .upload-label {
+      display: inline-block;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  
+  <!-- 装饰性边角 -->
+  <div class="corner-decoration corner-tl"></div>
+  <div class="corner-decoration corner-tr"></div>
+  <div class="corner-decoration corner-bl"></div>
+  <div class="corner-decoration corner-br"></div>
+  
+  <!-- 扫描线效果 -->
+  <div class="scan-line"></div>
+  
+  <!-- 网格覆盖层 -->
+  <div class="grid-overlay"></div>
+  
+  <div class="mouse-position" id="mouse-position">X: --, Y: --, H: --m</div>
+  <button class="save-btn" id="save-btn">保存图片</button>
+  
+  <!-- 页面头部 -->
+  <header class="header">
+    <div class="title">SCI-FI 3D 地形扫描系统</div>
+    <div class="date-time" id="current-time">--:--:--</div>
+  </header>
+  
+  <!-- 控制面板 -->
+  <div class="controls-panel">
+    <div class="panel-header">
+      <div class="panel-title">控制面板</div>
+      <i class="bi bi-gear" style="font-size: 18px;"></i>
+    </div>
+    
+    <div class="btn-group">
+      <button class="btn" id="load-btn">
+        <i class="bi bi-upload"></i>
+        <span>加载地形</span>
+      </button>
+      <input type="file" id="heightmap-input" class="file-input" accept=".png,.r16">
+      <button class="btn" id="reset-btn">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        <span>重置</span>
+      </button>
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>等高线数量</span>
+        <span id="contour-value">50</span>
+      </div>
+      <input type="range" min="5" max="50" value="50" class="slider" id="contour-slider">
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>高度缩放</span>
+        <span id="scale-value">1.0</span>
+      </div>
+      <input type="range" min="0.1" max="3" value="1" step="0.1" class="slider" id="scale-slider">
+    </div>
+    
+    <div class="color-selector">
+      <div class="panel-title" style="margin-bottom: 10px;">颜色方案</div>
+      
+      <div class="color-option">
+        <input type="radio" name="color-scheme" id="color-plasma" class="color-radio" checked>
+        <label for="color-plasma" class="color-label">等离子</label>
+        <div class="color-preview" style="background: linear-gradient(to right, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921);"></div>
+      </div>
+      
+      <div class="color-option">
+        <input type="radio" name="color-scheme" id="color-viridis" class="color-radio">
+        <label for="color-viridis" class="color-label">翠绿</label>
+        <div class="color-preview" style="background: linear-gradient(to right, #440154, #414487, #2a788e, #22a884, #7ad151);"></div>
+      </div>
+      
+      <div class="color-option">
+        <input type="radio" name="color-scheme" id="color-inferno" class="color-radio">
+        <label for="color-inferno" class="color-label">炽热</label>
+        <div class="color-preview" style="background: linear-gradient(to right, #000004, #420a68, #932667, #dd513a, #fca50a);"></div>
+      </div>
+      
+      <div class="color-option">
+        <input type="radio" name="color-scheme" id="color-turbo" class="color-radio">
+        <label for="color-turbo" class="color-label">涡轮</label>
+        <div class="color-preview" style="background: linear-gradient(to right, #30123b, #4676b8, #28bceb, #75fb4c, #f7f056);"></div>
+      </div>
+    </div>
+    
+    <div class="data-layers">
+      <div class="panel-title" style="margin-bottom: 10px;">显示选项</div>
+      
+      <div class="layer-item">
+        <input type="checkbox" id="layer-grid" class="layer-checkbox" checked>
+        <label for="layer-grid" class="layer-label">网格</label>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" id="layer-contour" class="layer-checkbox" checked>
+        <label for="layer-contour" class="layer-label">等高线</label>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" id="layer-labels" class="layer-checkbox" checked>
+        <label for="layer-labels" class="layer-label">高度标签</label>
+      </div>
+      
+      <div class="layer-item">
+        <input type="checkbox" id="layer-3d" class="layer-checkbox" checked>
+        <label for="layer-3d" class="layer-label">3D效果</label>
+      </div>
+
+      <div class="panel-title" style="margin: 15px 0 10px 0;">批量处理</div>
+      
+      <div class="btn-group">
+        <button class="btn" id="batch-process-btn">
+          <i class="bi bi-folder"></i>
+          <span>批量处理</span>
+        </button>
+        <input type="file" id="directory-input" webkitdirectory directory multiple style="display: none;">
+      </div>
+      
+      <div class="control-group" style="margin-top: 10px;">
+        <label for="output-path" class="control-label">输出路径</label>
+        <input type="text" id="output-path" class="control-input" placeholder="输出目录路径">
+      </div>
+
+    </div>
+  </div>
+  
+  <!-- 添加缩略图面板 -->
+  <div class="minimap-panel">
+    <div class="minimap-title">地形缩略图</div>
+    <div class="minimap-container">
+      <canvas class="minimap-canvas" id="minimap-canvas"></canvas>
+      <div class="minimap-grid"></div>
+      <div class="minimap-viewport" id="minimap-viewport"></div>
+    </div>
+  </div>
+
+  <!-- 数据面板 -->
+  <div class="data-panel">
+    <div class="panel-header">
+      <div class="panel-title">地形数据</div>
+      <i class="bi bi-graph-up" style="font-size: 18px;"></i>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-rulers"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">分辨率</div>
+        <div class="data-value" id="resolution-value">--x--</div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-arrow-up"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">最高海拔</div>
+        <div class="data-value" id="max-elevation">--<span class="data-unit">m</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-arrow-down"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">最低海拔</div>
+        <div class="data-value" id="min-elevation">--<span class="data-unit">m</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-arrows-expand"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">海拔范围</div>
+        <div class="data-value" id="elevation-range">--<span class="data-unit">m</span></div>
+      </div>
+    </div>
+    
+    <div class="data-item">
+      <div class="data-icon">
+        <i class="bi bi-geo-alt"></i>
+      </div>
+      <div class="data-content">
+        <div class="data-label">当前位置</div>
+        <div class="data-value" id="current-position">--,--</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 图例 -->
+  <div class="legend">
+    <div class="legend-title">海拔高度 (m)</div>
+    <div class="legend-gradient" id="legend-gradient"></div>
+    <div class="legend-labels">
+      <div class="legend-label" id="legend-min">--</div>
+      <div class="legend-label" id="legend-max">--</div>
+    </div>
+  </div>
+  
+  <!-- 状态文本 -->
+  <div class="status-text">
+    状态: <span id="status-message">等待加载地形数据</span>
+  </div>
+  
+  <!-- 扫描完成提示 -->
+  <div class="scan-complete" id="scan-complete" style="display: none;">
+    地形扫描完成
+  </div>
+  
+  <!-- 加载动画 -->
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">正在初始化扫描系统...</div>
+  </div>
+
+  <!-- 网格覆盖层 -->
+  <div class="grid-overlay"></div>
+  
+  <!-- 引入Three.js和其他库 -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.9.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+  
+  <script>
+    // 全局变量
+    let scene, camera, renderer, controls;
+    let terrain, heightData, contourLines = [];
+    let width = 0, height = 0;
+    let minHeight = 0, maxHeight = 0;
+    let colorScheme = 'plasma';
+    let contourLevels = 20;
+    let heightScale = 1.0;
+    
+    // 初始化
+    window.addEventListener('load', () => {
+      initScene(); // 替换原来的init3DScene()
+      setupEventListeners();
+      updateTime();
+      setInterval(updateTime, 1000);
+      
+      // 初始化缩略图
+      const minimapCanvas = document.getElementById('minimap-canvas');
+      const minimapCtx = minimapCanvas.getContext('2d');
+      minimapCtx.fillStyle = '#000000';
+      minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+      
+      // 隐藏加载动画
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+      }, 2000);
+    });
+
+    // 初始化2D场景 - 替换原来的init3DScene()函数
+    function initScene() {
+      // 创建canvas元素
+      const canvas = document.createElement('canvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      document.getElementById('container').appendChild(canvas);
+      
+      // 保存canvas上下文供后续使用
+      window.ctx = canvas.getContext('2d');
+      
+      // 创建网格交点
+      createGridPoints();
+      
+      // 添加鼠标事件监听
+      setupMouseEvents(canvas);
+      
+      // 开始动画循环
+      animate();
+    }
+    
+    // 创建网格交点光点
+    function createGridPoints() {
+      const gridPointsContainer = document.createElement('div');
+      gridPointsContainer.className = 'grid-points';
+      document.getElementById('container').appendChild(gridPointsContainer);
+      
+      // 首先移除原有的网格线
+      const gridOverlay = document.querySelector('.grid-overlay');
+      if (gridOverlay) {
+        // 修改网格线样式，使其在交点处断开
+        gridOverlay.style.backgroundImage = 'none';
+        
+        // 创建水平线和垂直线
+        const horizontalLines = document.createElement('div');
+        horizontalLines.className = 'grid-lines horizontal';
+        const verticalLines = document.createElement('div');
+        verticalLines.className = 'grid-lines vertical';
+        
+        gridOverlay.appendChild(horizontalLines);
+        gridOverlay.appendChild(verticalLines);
+      }
+      
+      const gridSize = 80; // 与CSS中的网格大小保持一致
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // 计算需要多少行和列的点
+      const cols = Math.ceil(width / gridSize) + 1;
+      const rows = Math.ceil(height / gridSize) + 1;
+      
+      // 创建点
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const point = document.createElement('div');
+          point.className = 'grid-point';
+          point.style.left = (x * gridSize) + 'px';
+          point.style.top = (y * gridSize) + 'px';
+          
+          // 随机调整亮度，使效果更自然
+          const brightness = 0.5 + Math.random() * 0.5;
+          point.style.opacity = brightness;
+          
+          gridPointsContainer.appendChild(point);
+          
+          // 创建断开的网格线
+          if (gridOverlay) {
+            // 水平线（每个点左右两侧）
+            if (x < cols - 1) {
+              const hLine = document.createElement('div');
+              hLine.className = 'grid-line h-line';
+              hLine.style.left = (x * gridSize + 5) + 'px';
+              hLine.style.top = (y * gridSize) + 'px';
+              hLine.style.width = (gridSize - 10) + 'px';
+              gridOverlay.querySelector('.horizontal').appendChild(hLine);
+            }
+            
+            // 垂直线（每个点上下两侧）
+            if (y < rows - 1) {
+              const vLine = document.createElement('div');
+              vLine.className = 'grid-line v-line';
+              vLine.style.left = (x * gridSize) + 'px';
+              vLine.style.top = (y * gridSize + 5) + 'px';
+              vLine.style.height = (gridSize - 10) + 'px';
+              gridOverlay.querySelector('.vertical').appendChild(vLine);
+            }
+          }
+        }
+      }
+      
+      // 添加CSS样式
+      const style = document.createElement('style');
+      style.textContent = `
+        .grid-overlay {
+          background-image: none !important;
+        }
+        .grid-line {
+          position: absolute;
+          background-color: var(--grid-color);
+          opacity: 0.6;
+        }
+        .h-line {
+          height: 1px;
+        }
+        .v-line {
+          width: 1px;
+        }
+        .grid-point {
+          z-index: 12;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // 设置鼠标事件
+    function setupMouseEvents(canvas) {
+      // 鼠标移动事件，更新位置显示
+      canvas.addEventListener('mousemove', (event) => {
+        if (!heightData) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        
+        // 计算缩放比例
+        const scale = Math.min(canvas.width / width, canvas.height / height);
+        const offsetX = (canvas.width - width * scale) / 2;
+        const offsetY = (canvas.height - height * scale) / 2;
+        
+        // 计算鼠标在地形上的位置
+        const terrainX = Math.floor((event.clientX - rect.left - offsetX) / scale);
+        const terrainY = Math.floor((event.clientY - rect.top - offsetY) / scale);
+        
+        // 获取高度值
+        let heightValue = 0;
+        if (terrainX >= 0 && terrainX < width && terrainY >= 0 && terrainY < height) {
+          heightValue = heightData[terrainY * width + terrainX];
+          
+          // 更新UI显示
+          document.getElementById('current-position').textContent = 
+            `${terrainX},${terrainY} (${heightValue}m)`;
+          
+          // 更新鼠标位置显示
+          document.getElementById('mouse-position').textContent = 
+            `X: ${terrainX}, Y: ${terrainY}, H: ${heightValue}m`;
+        }
+      });
+      
+      // 鼠标点击事件，创建十字锁定
+      canvas.addEventListener('click', (event) => {
+        // 移除旧的十字准星
+        const oldCrosshair = document.querySelector('.crosshair');
+        if (oldCrosshair) {
+          oldCrosshair.remove();
+        }
+        
+        // 创建新的十字准星
+        const crosshair = document.createElement('div');
+        crosshair.className = 'crosshair';
+        crosshair.style.left = event.clientX + 'px';
+        crosshair.style.top = event.clientY + 'px';
+        
+        // 添加水平线
+        const horizontal = document.createElement('div');
+        horizontal.className = 'crosshair-h';
+        crosshair.appendChild(horizontal);
+        
+        // 添加垂直线
+        const vertical = document.createElement('div');
+        vertical.className = 'crosshair-v';
+        crosshair.appendChild(vertical);
+        
+        // 添加脉冲圆圈效果
+        const circle = document.createElement('div');
+        circle.className = 'crosshair-circle';
+        crosshair.appendChild(circle);
+        
+        document.body.appendChild(crosshair);
+        
+        // 播放锁定音效
+        playLockSound();
+      });
+    }
+    
+    // 播放锁定音效
+    function playLockSound() {
+      const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAASAAAeMwAUFBQUFCIiIiIiIjAwMDAwMD4+Pj4+PkxMTExMTFpaWlpaWmhoaGhoaHZ2dnZ2doSEhISEhJKSkpKSkqCgoKCgoK6urq6urrKysrKysr6+vr6+vsbGxsbGxtTU1NTU1OTk5OTk5PLy8vLy8v7+/v7+/v///////////////8BDIG1ldGEAAAAbAAAAGgAADP7///L39/f39/f39/f39/f39/f39/f3AAAA//tAwAAABHBndzAAAAAAKuCIQABESEdGIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiL/+xDEAAIEMGdHMAAAAAIuMKPAABEIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI//sQxAKABCBnR7AAAAACPDGkQABEiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiI');
+      audio.volume = 0.3;
+      audio.play();
+    }
+    
+    // 窗口大小调整时重新创建网格点
+    function onWindowResize() {
+      const canvas = document.querySelector('#container canvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // 重新创建网格点
+      const oldGridPoints = document.querySelector('.grid-points');
+      if (oldGridPoints) {
+        oldGridPoints.remove();
+      }
+      createGridPoints();
+      
+      if (heightData) {
+        renderTerrainImage();
+      }
+    }
+    
+  // <!-- 添加保存图片功能 -->
+  document.getElementById('save-btn').addEventListener('click', () => {
+    // 创建一个新的离屏canvas，使用原始高度图的分辨率
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = width;
+    offscreenCanvas.height = height;
+    const offCtx = offscreenCanvas.getContext('2d');
+    
+    // 在离屏canvas上以原始分辨率渲染地形
+    renderTerrainToCanvas(offscreenCanvas, 1); // 1表示不缩放
+    
+    // 创建临时链接并触发下载
+    const link = document.createElement('a');
+    link.download = 'terrain-scan-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+    link.href = offscreenCanvas.toDataURL('image/png');
+    link.click();
+    
+    // 显示保存成功消息
+    document.getElementById('status-message').textContent = '图片已保存(原始分辨率：' + width + 'x' + height + ')';
+    setTimeout(() => {
+      document.getElementById('status-message').textContent = '就绪';
+    }, 2000);
+  });
+    
+    // 设置事件监听器
+    function setupEventListeners() {
+      // 窗口大小调整
+      window.addEventListener('resize', onWindowResize);
+      
+      // 加载地形按钮
+      document.getElementById('load-btn').addEventListener('click', () => {
+        document.getElementById('heightmap-input').click();
+      });
+      
+      // 文件输入变化
+      document.getElementById('heightmap-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          loadHeightmap(file);
+        }
+      });
+
+      // 批量处理按钮
+      document.getElementById('batch-process-btn').addEventListener('click', () => {
+        document.getElementById('directory-input').click();
+      });
+      
+      // 目录输入变化
+      document.getElementById('directory-input').addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files.length > 0) {
+          batchProcessFiles(files);
+        }
+      });
+
+      // 重置按钮
+      document.getElementById('reset-btn').addEventListener('click', resetView);
+      
+      // 等高线滑块
+      document.getElementById('contour-slider').addEventListener('input', (e) => {
+        contourLevels = parseInt(e.target.value);
+        document.getElementById('contour-value').textContent = contourLevels;
+        if (heightData) {
+          renderTerrainImage(); // 替换原来的updateTerrain()
+        }
+      });
+      
+      // 高度缩放滑块
+      document.getElementById('scale-slider').addEventListener('input', (e) => {
+        heightScale = parseFloat(e.target.value);
+        document.getElementById('scale-value').textContent = heightScale.toFixed(1);
+        if (heightData) {
+          renderTerrainImage(); // 替换原来的updateTerrainScale()
+        }
+      });
+      
+      // 颜色方案选择
+      document.querySelectorAll('input[name="color-scheme"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+          if (e.target.checked) {
+            colorScheme = e.target.id.replace('color-', '');
+            if (heightData) {
+              renderTerrainImage(); // 替换原来的updateTerrain()
+            }
+          }
+        });
+      });
+      
+      // 图层显示控制
+      document.getElementById('layer-grid').addEventListener('change', (e) => {
+        document.querySelector('.grid-overlay').style.display = e.target.checked ? 'block' : 'none';
+      });
+      
+      document.getElementById('layer-contour').addEventListener('change', (e) => {
+        if (heightData) {
+          renderTerrainImage(); // 替换原来的contourLines.forEach()
+        }
+      });
+      
+      document.getElementById('layer-labels').addEventListener('change', (e) => {
+        if (heightData) {
+          renderTerrainImage(); // 替换原来的labels.forEach()
+        }
+      });
+      
+      // 移除3D效果控制，因为我们不再使用3D
+      document.getElementById('layer-3d').parentElement.style.display = 'none';
+    }
+
+    // 窗口大小调整
+    function onWindowResize() {
+      const canvas = document.querySelector('#container canvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      if (heightData) {
+        renderTerrainImage(); 
+      }
+    }
+    
+    // 批量处理文件
+    async function batchProcessFiles(fileList) {
+      const statusMsg = document.getElementById('status-message');
+      const outputPath = document.getElementById('output-path').value.trim();
+      
+      if (!outputPath) {
+        alert('请先指定输出路径');
+        return;
+      }
+      
+      // 显示加载动画
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('loading').querySelector('.loading-text').textContent = '正在批量处理文件...';
+      
+      // 过滤出PNG和R16文件
+      const validFiles = Array.from(fileList).filter(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        return ext === 'png' || ext === 'r16';
+      });
+      
+      if (validFiles.length === 0) {
+        statusMsg.textContent = '未找到有效的PNG或R16文件';
+        document.getElementById('loading').classList.add('hidden');
+        return;
+      }
+      
+      statusMsg.textContent = `找到 ${validFiles.length} 个文件，开始处理...`;
+      
+      // 创建一个文件系统对象，用于保存文件
+      let fileSystem;
+      try {
+        fileSystem = await window.showDirectoryPicker({
+          id: 'terrain-output',
+          startIn: 'documents',
+          mode: 'readwrite'
+        });
+      } catch (error) {
+        console.error('获取文件系统访问权限失败:', error);
+        statusMsg.textContent = '获取文件系统访问权限失败，请检查浏览器权限设置';
+        document.getElementById('loading').classList.add('hidden');
+        return;
+      }
+      
+      // 处理每个文件
+      let processedCount = 0;
+      let errorCount = 0;
+      
+      for (const file of validFiles) {
+        try {
+          // 更新状态
+          statusMsg.textContent = `正在处理 ${processedCount + 1}/${validFiles.length}: ${file.name}`;
+          
+          // 获取文件相对路径
+          const relativePath = file.webkitRelativePath || file.name;
+          const pathParts = relativePath.split('/');
+          const fileName = pathParts.pop(); // 移除文件名，只保留目录结构
+          
+          // 创建输出目录结构
+          let currentDir = fileSystem;
+          for (const dirName of pathParts) {
+            if (dirName) {
+              try {
+                currentDir = await currentDir.getDirectoryHandle(dirName, { create: true });
+              } catch (e) {
+                console.error(`创建目录 ${dirName} 失败:`, e);
+                throw new Error(`创建目录结构失败: ${e.message}`);
+              }
+            }
+          }
+          
+          // 处理文件
+          await processFileInBatch(file, currentDir, fileName);
+          
+          processedCount++;
+        } catch (error) {
+          console.error(`处理文件 ${file.name} 时出错:`, error);
+          errorCount++;
+        }
+        
+        // 更新进度
+        statusMsg.textContent = `已处理 ${processedCount}/${validFiles.length} 个文件，错误: ${errorCount}`;
+      }
+      
+      // 处理完成
+      document.getElementById('loading').classList.add('hidden');
+      statusMsg.textContent = `批量处理完成。成功: ${processedCount}，失败: ${errorCount}`;
+    }
+    
+    // 在批量模式下处理单个文件
+    async function processFileInBatch(file, outputDir, fileName) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
+          try {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            let processedData;
+            
+            // 根据文件类型处理数据
+            if (fileExt === 'png') {
+              processedData = await processPNGDataForBatch(e.target.result);
+            } 
+            // else if (fileExt === 'r16') {
+            //   processedData = await processR16DataForBatch(new Uint8Array(e.target.result));
+            // } 
+            else {
+              throw new Error('不支持的文件格式');
+            }
+            
+            // 生成输出文件名
+            const outputFileName = fileName.replace(/\.(png|r16)$/i, '-processed.png');
+            
+            // 保存处理后的图像
+            try {
+              const fileHandle = await outputDir.getFileHandle(outputFileName, { create: true });
+              const writable = await fileHandle.createWritable();
+              
+              // 将Canvas数据转换为Blob
+              const blob = await new Promise(resolve => {
+                processedData.toBlob(resolve, 'image/png');
+              });
+              
+              await writable.write(blob);
+              await writable.close();
+              
+              resolve();
+            } catch (error) {
+              reject(new Error(`保存文件失败: ${error.message}`));
+            }
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        reader.onerror = function() {
+          reject(new Error('读取文件时出错'));
+        };
+        
+        if (file.name.endsWith('.r16')) {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+    
+    // // 处理R16数据用于批量模式
+    // async function processR16DataForBatch(data) {
+    //   // 读取宽度和高度
+    //   const dataView = new DataView(data.buffer);
+    //   const fileWidth = dataView.getUint32(0, true);
+    //   const fileHeight = dataView.getUint32(4, true);
+      
+    //   // 创建高度数据数组
+    //   const fileHeightData = new Float32Array(fileWidth * fileHeight);
+      
+    //   // 读取高度数据
+    //   for (let i = 0; i < fileWidth * fileHeight; i++) {
+    //     const value = dataView.getUint16(8 + i * 2, true);
+    //     fileHeightData[i] = value;
+    //   }
+      
+    //   // 计算高度范围
+    //   let fileMinHeight = 65535;
+    //   let fileMaxHeight = 0;
+      
+    //   for (let i = 0; i < fileHeightData.length; i++) {
+    //     fileMinHeight = Math.min(fileMinHeight, fileHeightData[i]);
+    //     fileMaxHeight = Math.max(fileMaxHeight, fileHeightData[i]);
+    //   }
+      
+    //   // 创建离屏Canvas
+    //   const canvas = document.createElement('canvas');
+    //   canvas.width = fileWidth;
+    //   canvas.height = fileHeight;
+    //   const ctx = canvas.getContext('2d');
+      
+    //   // 创建图像数据
+    //   const imageData = ctx.createImageData(fileWidth, fileHeight);
+    //   const data = imageData.data;
+      
+    //   // 获取颜色函数
+    //   const colorFn = getColorFunction(colorScheme);
+      
+    //   // 填充像素数据
+    //   for (let y = 0; y < fileHeight; y++) {
+    //     for (let x = 0; x < fileWidth; x++) {
+    //       const index = (y * fileWidth + x) * 4;
+    //       const heightValue = fileHeightData[y * fileWidth + x];
+    //       const normalizedHeight = (heightValue - fileMinHeight) / (fileMaxHeight - fileMinHeight);
+          
+    //       // 获取颜色
+    //       const color = colorFn(normalizedHeight);
+          
+    //       // 设置像素颜色
+    //       data[index] = Math.floor(color.r * 255);     // R
+    //       data[index + 1] = Math.floor(color.g * 255); // G
+    //       data[index + 2] = Math.floor(color.b * 255); // B
+    //       data[index + 3] = 255;                       // A
+    //     }
+    //   }
+      
+    //   // 将图像数据放到Canvas
+    //   ctx.putImageData(imageData, 0, 0);
+      
+    //   // 如果启用等高线，绘制等高线
+    //   if (document.getElementById('layer-contour').checked) {
+    //     // 临时保存全局变量
+    //     const tempWidth = width;
+    //     const tempHeight = height;
+    //     const tempHeightData = heightData;
+    //     const tempMinHeight = minHeight;
+    //     const tempMaxHeight = maxHeight;
+        
+    //     // 设置临时全局变量用于绘制等高线
+    //     width = fileWidth;
+    //     height = fileHeight;
+    //     heightData = fileHeightData;
+    //     minHeight = fileMinHeight;
+    //     maxHeight = fileMaxHeight;
+        
+    //     // 绘制等高线
+    //     drawContourLines(ctx);
+        
+    //     // 恢复全局变量
+    //     width = tempWidth;
+    //     height = tempHeight;
+    //     heightData = tempHeightData;
+    //     minHeight = tempMinHeight;
+    //     maxHeight = tempMaxHeight;
+    //   }
+      
+    //   return canvas;
+    // }
+    
+    // 处理PNG数据用于批量模式
+    async function processPNGDataForBatch(dataURL) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+          try {
+            const fileWidth = img.width;
+            const fileHeight = img.height;
+            
+            // 创建临时Canvas来获取图像数据
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = fileWidth;
+            tempCanvas.height = fileHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // 绘制图像
+            tempCtx.drawImage(img, 0, 0);
+            
+            // 获取图像数据
+            const imgData = tempCtx.getImageData(0, 0, fileWidth, fileHeight);
+            const pixels = imgData.data;
+            
+            // 创建高度数据数组
+            const fileHeightData = new Float32Array(fileWidth * fileHeight);
+            
+            // 从图像数据中提取高度信息
+            for (let i = 0; i < fileWidth * fileHeight; i++) {
+              // 使用灰度值作为高度（取RGB平均值）
+              const r = pixels[i * 4];
+              const g = pixels[i * 4 + 1];
+              const b = pixels[i * 4 + 2];
+              fileHeightData[i] = (r + g + b) / 3;
+            }
+            
+            // 计算高度范围
+            let fileMinHeight = 255;
+            let fileMaxHeight = 0;
+            
+            for (let i = 0; i < fileHeightData.length; i++) {
+              fileMinHeight = Math.min(fileMinHeight, fileHeightData[i]);
+              fileMaxHeight = Math.max(fileMaxHeight, fileHeightData[i]);
+            }
+            
+                        // 创建输出Canvas
+                        const canvas = document.createElement('canvas');
+            canvas.width = fileWidth;
+            canvas.height = fileHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // 创建图像数据
+            const imageData = ctx.createImageData(fileWidth, fileHeight);
+            const pixelData = imageData.data;
+            
+            // 获取颜色函数
+            const colorFn = getColorFunction(colorScheme);
+            
+            // 填充像素数据
+            for (let y = 0; y < fileHeight; y++) {
+              for (let x = 0; x < fileWidth; x++) {
+                const index = (y * fileWidth + x) * 4;
+                const heightValue = fileHeightData[y * fileWidth + x];
+                const normalizedHeight = (heightValue - fileMinHeight) / (fileMaxHeight - fileMinHeight);
+                
+                // 获取颜色
+                const color = colorFn(normalizedHeight);
+                
+                // 设置像素颜色
+                pixelData[index] = Math.floor(color.r * 255);     // R
+                pixelData[index + 1] = Math.floor(color.g * 255); // G
+                pixelData[index + 2] = Math.floor(color.b * 255); // B
+                pixelData[index + 3] = 255;                       // A
+              }
+            }
+            
+            // 将图像数据放到Canvas
+            ctx.putImageData(imageData, 0, 0);
+            
+            // 如果启用等高线，绘制等高线
+            if (document.getElementById('layer-contour').checked) {
+              // 临时保存全局变量
+              const tempWidth = width;
+              const tempHeight = height;
+              const tempHeightData = heightData;
+              const tempMinHeight = minHeight;
+              const tempMaxHeight = maxHeight;
+              
+              // 设置临时全局变量用于绘制等高线
+              width = fileWidth;
+              height = fileHeight;
+              heightData = fileHeightData;
+              minHeight = fileMinHeight;
+              maxHeight = fileMaxHeight;
+              
+              // 绘制等高线
+              drawContourLines(ctx);
+              
+              // 恢复全局变量
+              width = tempWidth;
+              height = tempHeight;
+              heightData = tempHeightData;
+              minHeight = tempMinHeight;
+              maxHeight = tempMaxHeight;
+            }
+            
+            resolve(canvas);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        
+        img.onerror = function() {
+          reject(new Error('加载图像时出错'));
+        };
+        
+        img.src = dataURL;
+      });
+    }
+    
+    // 加载高度图
+    function loadHeightmap(file) {
+      // 显示加载动画
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('loading').querySelector('.loading-text').textContent = '正在加载地形数据...';
+      
+      // 更新状态
+      document.getElementById('status-message').textContent = '正在加载地形数据...';
+      
+      // 根据文件类型处理
+      if (file.name.endsWith('.r16')) {
+        loadR16File(file);
+      } else if (file.name.endsWith('.png')) {
+        loadPNGFile(file);
+      } else {
+        alert('不支持的文件格式，请使用.r16或.png文件');
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+    
+
+
+    // 处理地形数据
+    function processTerrain() {
+      // 计算高度范围
+      minHeight = 65535;
+      maxHeight = 0;
+      
+      for (let i = 0; i < heightData.length; i++) {
+        minHeight = Math.min(minHeight, heightData[i]);
+        maxHeight = Math.max(maxHeight, heightData[i]);
+      }
+      
+      // 更新UI显示
+      document.getElementById('resolution-value').textContent = `${width}x${height}`;
+      document.getElementById('max-elevation').innerHTML = `${maxHeight}<span class="data-unit">m</span>`;
+      document.getElementById('min-elevation').innerHTML = `${minHeight}<span class="data-unit">m</span>`;
+      document.getElementById('elevation-range').innerHTML = `${maxHeight - minHeight}<span class="data-unit">m</span>`;
+      
+      document.getElementById('legend-min').textContent = minHeight;
+      document.getElementById('legend-max').textContent = maxHeight;
+      
+      // 渲染地形图像
+      renderTerrainImage();
+      
+      // 隐藏加载动画
+      document.getElementById('loading').classList.add('hidden');
+      
+      // 显示扫描完成提示
+      const scanComplete = document.getElementById('scan-complete');
+      scanComplete.style.display = 'block';
+      setTimeout(() => {
+        scanComplete.style.display = 'none';
+      }, 3000);
+      
+      // 更新状态
+      document.getElementById('status-message').textContent = '地形数据加载完成';
+    }
+
+    // 渲染地形图像到指定画布
+    function renderTerrainToCanvas(canvas, scaleRatio = null) {
+      const ctx = canvas.getContext('2d');
+      
+      // 清除画布
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 如果没有指定缩放比例，则计算适合画布的缩放比例
+      let scale = scaleRatio;
+      let offsetX = 0;
+      let offsetY = 0;
+      
+      if (scale === null) {
+        scale = Math.min(canvas.width / width, canvas.height / height);
+        offsetX = (canvas.width - width * scale) / 2;
+        offsetY = (canvas.height - height * scale) / 2;
+      }
+      
+      // 创建图像数据
+      const imageData = ctx.createImageData(width, height);
+      const data = imageData.data;
+      
+      // 获取颜色函数
+      const colorFn = getColorFunction(colorScheme);
+      
+      // 填充像素数据
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const index = (y * width + x) * 4;
+          const heightValue = heightData[y * width + x];
+          const normalizedHeight = (heightValue - minHeight) / (maxHeight - minHeight);
+          
+          // 获取颜色
+          const color = colorFn(normalizedHeight);
+          
+          // 设置像素颜色
+          data[index] = Math.floor(color.r * 255);     // R
+          data[index + 1] = Math.floor(color.g * 255); // G
+          data[index + 2] = Math.floor(color.b * 255); // B
+          data[index + 3] = 255;                       // A
+        }
+      }
+      
+      // 创建临时离屏canvas来处理图像
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      // 将图像数据放到临时canvas
+      tempCtx.putImageData(imageData, 0, 0);
+      
+      // 绘制等高线（如果启用）
+      if (document.getElementById('layer-contour').checked) {
+        drawContourLines(tempCtx);
+      }
+      
+      // 将临时canvas绘制到目标canvas上，应用缩放
+      if (scale === 1) {
+        // 如果是1:1渲染，直接复制图像数据
+        ctx.drawImage(tempCanvas, 0, 0);
+      } else {
+        // 应用缩放
+        ctx.drawImage(tempCanvas, offsetX, offsetY, width * scale, height * scale);
+      }
+      
+      return tempCanvas; // 返回临时canvas以便其他函数使用
+    }
+    
+    // 渲染地形图像（主函数，用于显示）
+    function renderTerrainImage() {
+      const canvas = document.querySelector('#container canvas');
+      
+      // 渲染到主canvas
+      const tempCanvas = renderTerrainToCanvas(canvas);
+      
+      // 更新图例颜色
+      updateLegendGradient();
+      
+      // 更新缩略图
+      updateMinimap(tempCanvas);
+    }    
+
+    // 添加缩略图更新函数
+    function updateMinimap(sourceCanvas) {
+      const minimapCanvas = document.getElementById('minimap-canvas');
+      const minimapCtx = minimapCanvas.getContext('2d');
+      
+      // 设置缩略图画布尺寸
+      minimapCanvas.width = 290;
+      minimapCanvas.height = 290;
+      
+      // 清除缩略图画布
+      minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+      minimapCtx.fillStyle = '#000000';
+      minimapCtx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+      
+      // 计算缩放比例，使地形适应缩略图
+      const scale = Math.min(minimapCanvas.width / width, minimapCanvas.height / height);
+      const offsetX = (minimapCanvas.width - width * scale) / 2;
+      const offsetY = (minimapCanvas.height - height * scale) / 2;
+      
+      // 绘制主要等高线
+      drawMinimapContours(minimapCtx, scale, offsetX, offsetY);
+      
+      // 更新视口指示器
+      updateMinimapViewport();
+    }
+    
+    // 绘制缩略图等高线
+    function drawMinimapContours(ctx, scale, offsetX, offsetY) {
+      // 启用抗锯齿
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 只绘制主要等高线（约5-7条）
+      const mainContourCount = 6;
+      const step = (maxHeight - minHeight) / mainContourCount;
+      
+      for (let i = 0; i <= mainContourCount; i++) {
+        const level = minHeight + i * step;
+        
+        ctx.beginPath();
+        ctx.strokeStyle = i % 2 === 0 ? '#00ffff' : '#ffffff';
+        ctx.lineWidth = i % 2 === 0 ? 1.5 : 0.8;
+        ctx.globalAlpha = i % 2 === 0 ? 0.9 : 0.7;
+        
+        // 使用Marching Squares算法提取等高线
+        const contourSegments = marchingSquares(heightData, width, height, level);
+        
+        // 绘制所有线段
+        for (const segment of contourSegments) {
+          ctx.moveTo(segment.x1 * scale + offsetX, segment.y1 * scale + offsetY);
+          ctx.lineTo(segment.x2 * scale + offsetX, segment.y2 * scale + offsetY);
+        }
+        
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+      }
+    }
+    
+    // 更新缩略图视口指示器
+    function updateMinimapViewport() {
+      if (!heightData) return;
+      
+      const mainCanvas = document.querySelector('#container canvas');
+      const minimapCanvas = document.getElementById('minimap-canvas');
+      const viewport = document.getElementById('minimap-viewport');
+      
+      // 计算主画布中地形的缩放和偏移
+      const mainScale = Math.min(mainCanvas.width / width, mainCanvas.height / height);
+      const mainOffsetX = (mainCanvas.width - width * mainScale) / 2;
+      const mainOffsetY = (mainCanvas.height - height * mainScale) / 2;
+      
+      // 计算缩略图中地形的缩放和偏移
+      const minimapScale = Math.min(minimapCanvas.width / width, minimapCanvas.height / height);
+      const minimapOffsetX = (minimapCanvas.width - width * minimapScale) / 2;
+      const minimapOffsetY = (minimapCanvas.height - height * minimapScale) / 2;
+      
+      // 计算视口尺寸和位置
+      const viewportWidth = (mainCanvas.width / mainScale) * minimapScale;
+      const viewportHeight = (mainCanvas.height / mainScale) * minimapScale;
+      
+      // 设置视口样式
+      viewport.style.width = `${Math.min(viewportWidth, minimapCanvas.width)}px`;
+      viewport.style.height = `${Math.min(viewportHeight, minimapCanvas.height)}px`;
+      viewport.style.left = `${minimapOffsetX}px`;
+      viewport.style.top = `${minimapOffsetY}px`;
+    }
+
+    
+    // 绘制等高线
+    function drawContourLines(ctx) {
+      // 启用抗锯齿
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // 计算等高线级别
+      const levels = [];
+      const step = (maxHeight - minHeight) / contourLevels;
+      
+      for (let i = 0; i <= contourLevels; i++) {
+        levels.push(minHeight + i * step);
+      }
+      
+      // 收集所有标签位置信息
+      const labelPositions = [];
+      if (document.getElementById('layer-labels').checked) {
+        levels.forEach((level, index) => {
+          const isHighlight = index % Math.ceil(contourLevels / 5) === 0;
+          if (isHighlight) {
+            const contourSegments = marchingSquares(heightData, width, height, level);
+            if (contourSegments.length > 0) {
+              // 收集标签位置但不绘制
+              collectLabelPositions(level, contourSegments, labelPositions);
+            }
+          }
+        });
+      }
+      
+      // 为每个等高线级别创建线条
+      levels.forEach((level, index) => {
+        const isHighlight = index % Math.ceil(contourLevels / 5) === 0;
+        
+        ctx.beginPath();
+        ctx.strokeStyle = isHighlight ? '#ffffff' : '#00ffff';
+        ctx.lineWidth = isHighlight ? 1.2 : 0.6; // 加粗线宽
+        ctx.globalAlpha = isHighlight ? 0.7 : 0.5;
+        // ctx.lineCap = 'round'; // 添加圆角端点
+        
+        // 使用Marching Squares算法提取等高线
+        const contourSegments = marchingSquares(heightData, width, height, level);
+        
+        // 绘制所有线段，但避开标签区域
+        for (const segment of contourSegments) {
+          // 检查线段是否与任何标签区域相交
+          if (!isSegmentIntersectingLabels(segment, labelPositions)) {
+            ctx.moveTo(segment.x1, segment.y1);
+            ctx.lineTo(segment.x2, segment.y2);
+          }
+        }
+        
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+        
+        // 为主要等高线添加高度标签
+        if (isHighlight && contourSegments.length > 0 && document.getElementById('layer-labels').checked) {
+          drawHeightLabel(ctx, level, contourSegments);
+        }
+      });
+    }
+    
+    // 收集标签位置信息
+    function collectLabelPositions(level, segments, labelPositions) {
+      const labelInterval = Math.max(1, Math.floor(segments.length / 5));
+      
+      for (let i = 0; i < segments.length; i += labelInterval) {
+        const segment = segments[i];
+        const x = (segment.x1 + segment.x2) / 2;
+        const y = (segment.y1 + segment.y2) / 2;
+        
+        // 计算标签文本
+        const labelText = `${Math.round(level)}m`;
+        
+        // 估计标签尺寸
+        const labelWidth = labelText.length * 8; // 估计每个字符8像素宽
+        const labelHeight = 10; // 估计高度
+        
+        // 添加标签区域信息
+        labelPositions.push({
+          x: x,
+          y: y,
+          width: labelWidth + 8, // 额外边距
+          height: labelHeight + 4 // 额外边距
+        });
+      }
+    }
+    
+    // 检查线段是否与标签区域相交
+    function isSegmentIntersectingLabels(segment, labelPositions) {
+      for (const label of labelPositions) {
+        // 简化的碰撞检测：检查线段的两个端点是否在标签矩形内
+        const labelLeft = label.x - label.width / 2;
+        const labelRight = label.x + label.width / 2;
+        const labelTop = label.y - label.height / 2;
+        const labelBottom = label.y + label.height / 2;
+        
+        // 检查线段端点是否在标签区域内
+        if ((segment.x1 >= labelLeft && segment.x1 <= labelRight && 
+             segment.y1 >= labelTop && segment.y1 <= labelBottom) ||
+            (segment.x2 >= labelLeft && segment.x2 <= labelRight && 
+             segment.y2 >= labelTop && segment.y2 <= labelBottom)) {
+          return true;
+        }
+        
+        // 检查线段是否穿过标签区域（简化版线段与矩形相交检测）
+        if (doLineSegmentsIntersect(
+              segment.x1, segment.y1, segment.x2, segment.y2,
+              labelLeft, labelTop, labelRight, labelTop) ||
+            doLineSegmentsIntersect(
+              segment.x1, segment.y1, segment.x2, segment.y2,
+              labelRight, labelTop, labelRight, labelBottom) ||
+            doLineSegmentsIntersect(
+              segment.x1, segment.y1, segment.x2, segment.y2,
+              labelRight, labelBottom, labelLeft, labelBottom) ||
+            doLineSegmentsIntersect(
+              segment.x1, segment.y1, segment.x2, segment.y2,
+              labelLeft, labelBottom, labelLeft, labelTop)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    // 检查两条线段是否相交
+    function doLineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+      // 计算方向
+      const d1 = direction(x3, y3, x4, y4, x1, y1);
+      const d2 = direction(x3, y3, x4, y4, x2, y2);
+      const d3 = direction(x1, y1, x2, y2, x3, y3);
+      const d4 = direction(x1, y1, x2, y2, x4, y4);
+      
+      // 检查是否相交
+      return (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && 
+              ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)));
+    }
+    
+    // 计算方向
+    function direction(x1, y1, x2, y2, x3, y3) {
+      return (x3 - x1) * (y2 - y1) - (x2 - x1) * (y3 - y1);
+    }
+    
+    // Marching Squares算法提取等高线
+    function marchingSquares(data, width, height, threshold) {
+      const segments = [];
+      
+      // 查找表：根据四个角的状态确定如何连接等高线
+      const edgeTable = [
+        [],                         // 0000
+        [{p1: 0, p2: 3}],          // 0001
+        [{p1: 0, p2: 1}],          // 0010
+        [{p1: 1, p2: 3}],          // 0011
+        [{p1: 1, p2: 2}],          // 0100
+        [{p1: 0, p2: 1}, {p1: 2, p2: 3}], // 0101 (鞍点，有两种可能的连接方式)
+        [{p1: 0, p2: 2}],          // 0110
+        [{p1: 2, p2: 3}],          // 0111
+        [{p1: 2, p2: 3}],          // 1000
+        [{p1: 0, p2: 2}],          // 1001
+        [{p1: 0, p2: 3}, {p1: 1, p2: 2}], // 1010 (鞍点，有两种可能的连接方式)
+        [{p1: 1, p2: 2}],          // 1011
+        [{p1: 1, p2: 3}],          // 1100
+        [{p1: 0, p2: 1}],          // 1101
+        [{p1: 0, p2: 3}],          // 1110
+        []                          // 1111
+      ];
+      
+      // 遍历所有单元格
+      for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+          // 获取单元格四个角的高度值
+          const topLeft = data[y * width + x];
+          const topRight = data[y * width + x + 1];
+          const bottomRight = data[(y + 1) * width + x + 1];
+          const bottomLeft = data[(y + 1) * width + x];
+          
+          // 计算单元格的状态码（0-15）
+          let code = 0;
+          if (topLeft >= threshold) code |= 8;
+          if (topRight >= threshold) code |= 4;
+          if (bottomRight >= threshold) code |= 2;
+          if (bottomLeft >= threshold) code |= 1;
+          
+          // 处理鞍点情况（状态码5或10）
+          // 使用平均值来决定连接方式
+          if (code === 5 || code === 10) {
+            const average = (topLeft + topRight + bottomRight + bottomLeft) / 4;
+            if ((code === 5 && average < threshold) || (code === 10 && average >= threshold)) {
+              // 交换连接方式
+              if (code === 5) code = 10;
+              else code = 5;
+            }
+          }
+          
+          // 根据状态码获取线段
+          const edges = edgeTable[code];
+          
+          // 计算线段的精确位置并添加到结果中
+          for (const edge of edges) {
+            const segment = {x1: 0, y1: 0, x2: 0, y2: 0};
+            
+            // 计算第一个点的位置
+            switch (edge.p1) {
+              case 0: // 左边
+                segment.x1 = x;
+                segment.y1 = y + interpolate(topLeft, bottomLeft, threshold);
+                break;
+              case 1: // 上边
+                segment.x1 = x + interpolate(topLeft, topRight, threshold);
+                segment.y1 = y;
+                break;
+              case 2: // 右边
+                segment.x1 = x + 1;
+                segment.y1 = y + interpolate(topRight, bottomRight, threshold);
+                break;
+              case 3: // 下边
+                segment.x1 = x + interpolate(bottomLeft, bottomRight, threshold);
+                segment.y1 = y + 1;
+                break;
+            }
+            
+            // 计算第二个点的位置
+            switch (edge.p2) {
+              case 0: // 左边
+                segment.x2 = x;
+                segment.y2 = y + interpolate(topLeft, bottomLeft, threshold);
+                break;
+              case 1: // 上边
+                segment.x2 = x + interpolate(topLeft, topRight, threshold);
+                segment.y2 = y;
+                break;
+              case 2: // 右边
+                segment.x2 = x + 1;
+                segment.y2 = y + interpolate(topRight, bottomRight, threshold);
+                break;
+              case 3: // 下边
+                segment.x2 = x + interpolate(bottomLeft, bottomRight, threshold);
+                segment.y2 = y + 1;
+                break;
+            }
+            
+            segments.push(segment);
+          }
+        }
+      }
+      
+      return segments;
+    }
+    
+    // 线性插值函数，用于计算等高线与单元格边的交点
+    function interpolate(val1, val2, threshold) {
+      if (val1 === val2) return 0.5;
+      return (threshold - val1) / (val2 - val1);
+    }
+    
+    // 绘制高度标签
+    function drawHeightLabel(ctx, level, segments) {
+      // 选择一些合适的位置绘制高度标签
+      // 为了避免标签过多，每隔一定数量的线段绘制一个标签
+      const labelInterval = Math.max(1, Math.floor(segments.length / 5));
+      
+      for (let i = 0; i < segments.length; i += labelInterval) {
+        const segment = segments[i];
+        
+        // 计算线段方向，以便标签能够沿着等高线方向放置
+        const dx = segment.x2 - segment.x1;
+        const dy = segment.y2 - segment.y1;
+        const angle = Math.atan2(dy, dx);
+        
+        // 在线段中点绘制标签
+        const x = (segment.x1 + segment.x2) / 2;
+        const y = (segment.y1 + segment.y2) / 2;
+        
+        // 计算标签文本
+        const labelText = `${Math.round(level)}m`;
+        const metrics = ctx.measureText(labelText);
+        const labelWidth = metrics.width;
+        const labelHeight = 8; // 近似文本高度
+        
+        // 保存当前绘图状态
+        ctx.save();
+        
+        // 移动到标签位置并旋转
+        ctx.translate(x, y);
+        // ctx.rotate(angle);
+        
+        // 清除标签区域的等高线
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // 完全透明
+        ctx.fillRect(-labelWidth/2 - 4, -labelHeight/2 - 2, labelWidth + 8, labelHeight + 4);
+        
+        // 恢复正常绘制模式
+        ctx.globalCompositeOperation = 'source-over';
+        
+        // 设置文本样式
+        ctx.font = '8px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // 绘制标签文本
+        ctx.fillText(labelText, 0, 0);
+        
+        // 恢复绘图状态
+        ctx.restore();
+      }
+    }
+    
+    // 更新时间显示
+    function updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      
+      const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+      const day = days[now.getDay()];
+      
+      document.getElementById('current-time').textContent = 
+        `${day} ${hours}:${minutes}:${seconds}`;
+    }
+    
+    // 加载高度图
+    function loadHeightmap(file) {
+      const statusMsg = document.getElementById('status-message');
+      statusMsg.textContent = '正在加载地形数据...';
+      
+      // 显示加载动画
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('loading').querySelector('.loading-text').textContent = '正在处理地形数据...';
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        
+        if (fileExt === 'r16') {
+          // 处理R16格式
+          processR16Data(new Uint8Array(e.target.result));
+        } else if (fileExt === 'png') {
+          // 处理PNG格式
+          processPNGData(e.target.result);
+        } else {
+          statusMsg.textContent = '不支持的文件格式，请使用.r16或.png文件';
+          document.getElementById('loading').classList.add('hidden');
+        }
+      };
+      
+      reader.onerror = function() {
+        statusMsg.textContent = '读取文件时出错';
+        document.getElementById('loading').classList.add('hidden');
+      };
+      
+      if (file.name.endsWith('.r16')) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    // 处理R16格式数据
+    function processR16Data(data) {
+      // 读取宽度和高度（前8个字节）
+      const dataView = new DataView(data.buffer);
+      width = dataView.getUint32(0, true);
+      height = dataView.getUint32(4, true);
+      
+      // 创建高度数据数组
+      heightData = new Uint16Array(width * height);
+      
+      // 读取高度数据
+      for (let i = 0; i < width * height; i++) {
+        heightData[i] = dataView.getUint16(8 + i * 2, true);
+      }
+      
+      // 处理地形数据
+      processTerrain();
+    }
+    
+    // 处理PNG格式数据
+    function processPNGData(dataUrl) {
+      const img = new Image();
+      img.onload = function() {
+        width = img.width;
+        height = img.height;
+        
+        // 创建canvas来读取像素数据
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        // 获取像素数据
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const pixels = imgData.data;
+        
+        // 创建高度数据数组
+        heightData = new Uint16Array(width * height);
+        
+        // 从灰度值转换为高度值
+        for (let i = 0; i < width * height; i++) {
+          // 使用红色通道值（假设是灰度图）
+          // 对于16位高度，将8位值（0-255）扩展到16位（0-65535）
+          heightData[i] = pixels[i * 4] * 256;
+        }
+        
+        // 处理地形数据
+        processTerrain();
+      };
+      
+      img.onerror = function() {
+        document.getElementById('status-message').textContent = '加载图像时出错';
+        document.getElementById('loading').classList.add('hidden');
+      };
+      
+      img.src = dataUrl;
+    }
+        // 处理地形数据
+        function processTerrain() {
+      // 计算高度范围
+      minHeight = 65535;
+      maxHeight = 0;
+      
+      for (let i = 0; i < heightData.length; i++) {
+        minHeight = Math.min(minHeight, heightData[i]);
+        maxHeight = Math.max(maxHeight, heightData[i]);
+      }
+      
+      // 更新UI显示
+      document.getElementById('resolution-value').textContent = `${width}x${height}`;
+      document.getElementById('max-elevation').innerHTML = `${maxHeight}<span class="data-unit">m</span>`;
+      document.getElementById('min-elevation').innerHTML = `${minHeight}<span class="data-unit">m</span>`;
+      document.getElementById('elevation-range').innerHTML = `${maxHeight - minHeight}<span class="data-unit">m</span>`;
+      
+      document.getElementById('legend-min').textContent = minHeight;
+      document.getElementById('legend-max').textContent = maxHeight;
+      
+      // 渲染地形图像 - 替换原来的updateTerrain()
+      renderTerrainImage();
+      
+      // 隐藏加载动画
+      document.getElementById('loading').classList.add('hidden');
+      
+      // 显示扫描完成提示
+      const scanComplete = document.getElementById('scan-complete');
+      scanComplete.style.display = 'block';
+      setTimeout(() => {
+        scanComplete.style.display = 'none';
+      }, 3000);
+      
+      // 更新状态
+      document.getElementById('status-message').textContent = '地形数据加载完成';
+    }
+    
+    // 更新地形
+    function updateTerrain() {
+      // 清除旧的地形和等高线
+      if (terrain) {
+        scene.remove(terrain);
+      }
+      
+      contourLines.forEach(line => {
+        scene.remove(line);
+      });
+      contourLines = [];
+      
+      // 创建地形几何体
+      const geometry = new THREE.PlaneGeometry(10, 10, width - 1, height - 1);
+      
+      // 设置顶点高度
+      const vertices = geometry.attributes.position.array;
+      for (let i = 0; i < vertices.length / 3; i++) {
+        const x = i % width;
+        const y = Math.floor(i / width);
+        
+        if (x < width && y < height) {
+          const heightValue = heightData[y * width + x];
+          const normalizedHeight = (heightValue - minHeight) / (maxHeight - minHeight);
+          
+          // 应用高度缩放
+          vertices[i * 3 + 2] = normalizedHeight * heightScale;
+        }
+      }
+      
+      geometry.attributes.position.needsUpdate = true;
+      geometry.computeVertexNormals();
+      
+      // 创建材质
+      const material = new THREE.MeshPhongMaterial({
+        side: THREE.DoubleSide,
+        vertexColors: true,
+        flatShading: true
+      });
+      
+      // 设置顶点颜色
+      const colors = [];
+      const colorFn = getColorFunction(colorScheme);
+      
+      for (let i = 0; i < vertices.length / 3; i++) {
+        const x = i % width;
+        const y = Math.floor(i / width);
+        
+        if (x < width && y < height) {
+          const heightValue = heightData[y * width + x];
+          const normalizedHeight = (heightValue - minHeight) / (maxHeight - minHeight);
+          
+          const color = colorFn(normalizedHeight);
+          colors.push(color.r, color.g, color.b);
+        }
+      }
+      
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      
+      // 创建地形网格
+      terrain = new THREE.Mesh(geometry, material);
+      terrain.rotation.x = -Math.PI / 2;
+      terrain.position.set(0, 0, 0);
+      scene.add(terrain);
+      
+      // 创建等高线
+      createContourLines();
+      
+      // 更新图例颜色
+      updateLegendGradient();
+    }
+    
+    // 更新地形高度缩放
+    function updateTerrainScale() {
+      if (!terrain) return;
+      
+      const vertices = terrain.geometry.attributes.position.array;
+      for (let i = 0; i < vertices.length / 3; i++) {
+        const x = i % width;
+        const y = Math.floor(i / width);
+        
+        if (x < width && y < height) {
+          const heightValue = heightData[y * width + x];
+          const normalizedHeight = (heightValue - minHeight) / (maxHeight - minHeight);
+          
+          // 应用高度缩放
+          vertices[i * 3 + 2] = normalizedHeight * heightScale;
+        }
+      }
+      
+      terrain.geometry.attributes.position.needsUpdate = true;
+      terrain.geometry.computeVertexNormals();
+      
+      // 更新等高线
+      createContourLines();
+    }
+    
+    // 创建等高线
+    function createContourLines() {
+      // 清除旧的等高线
+      contourLines.forEach(line => {
+        scene.remove(line);
+      });
+      contourLines = [];
+      
+      if (!document.getElementById('contourLines').checked) return;
+
+      // 计算等高线级别
+      const levels = [];
+      const step = (maxHeight - minHeight) / contourLevels;
+      
+      for (let i = 0; i <= contourLevels; i++) {
+        levels.push(minHeight + i * step);
+      }
+      
+      // 为每个等高线级别创建线条
+      levels.forEach((level, index) => {
+        const isHighlight = index % Math.ceil(contourLevels / 5) === 0;
+        const points = [];
+        
+        // 在x-z平面上创建等高线
+        for (let x = 0; x < width; x++) {
+          for (let z = 0; z < height; z++) {
+            const heightValue = heightData[z * width + x];
+            
+            if (Math.abs(heightValue - level) < step / 4) { // 减小阈值使等高线更精确
+              // 归一化坐标
+              const normalizedX = (x / width) * 10 - 5;
+              const normalizedZ = (z / height) * 10 - 5;
+              
+              points.push(new THREE.Vector3(normalizedX, 0.01, normalizedZ));
+            }
+          }
+        }
+        
+        if (points.length > 0) {
+          const geometry = new THREE.BufferGeometry().setFromPoints(points);
+          const material = new THREE.LineBasicMaterial({
+            color: isHighlight ? 0xffffff : 0x00ffff,
+            linewidth: isHighlight ? 3 : 1.5, // 增加线宽
+            opacity: isHighlight ? 1 : 0.8, // 增加不透明度
+            transparent: true
+          });
+          
+          const line = new THREE.Line(geometry, material);
+          line.rotation.x = -Math.PI / 2;
+          scene.add(line);
+          contourLines.push(line);
+          
+          // 为高亮等高线添加高度标签
+          if (isHighlight && points.length > 10) {
+            const heightLabel = document.createElement('div');
+            heightLabel.className = 'height-label';
+            heightLabel.textContent = `${(level / 1000).toFixed(1)}km`;
+            heightLabel.style.position = 'absolute';
+            heightLabel.style.color = '#ffffff';
+            heightLabel.style.fontSize = '12px';
+            heightLabel.style.fontFamily = 'Orbitron';
+            heightLabel.style.padding = '2px 6px';
+            heightLabel.style.background = 'rgba(0,0,0,0.7)';
+            heightLabel.style.border = '1px solid #00ffff';
+            heightLabel.style.borderRadius = '3px';
+            heightLabel.style.pointerEvents = 'none';
+            document.body.appendChild(heightLabel);
+            
+            // 更新标签位置
+            const midPoint = points[Math.floor(points.length / 2)];
+            const vector = new THREE.Vector3(midPoint.x, 0, midPoint.z);
+            vector.project(camera);
+            
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            
+            heightLabel.style.left = `${x}px`;
+            heightLabel.style.top = `${y}px`;
+            
+            contourLabels.push(heightLabel);
+          }
+        }
+      });
+    }
+    
+    // 获取颜色函数
+    function getColorFunction(scheme) {
+      // 使用D3.js的颜色比例尺
+      let colorScale;
+      
+      switch (scheme) {
+        case 'plasma':
+          colorScale = d3.interpolatePlasma;
+          break;
+        case 'viridis':
+          colorScale = d3.interpolateViridis;
+          break;
+        case 'inferno':
+          colorScale = d3.interpolateInferno;
+          break;
+        case 'turbo':
+          colorScale = d3.interpolateTurbo;
+          break;
+        default:
+          colorScale = d3.interpolatePlasma;
+      }
+      
+      return function(t) {
+        const colorString = colorScale(t);
+        const rgb = d3.rgb(colorString);
+        return new THREE.Color(rgb.r/255, rgb.g/255, rgb.b/255);
+      };
+    }
+    
+    // 更新图例渐变
+    function updateLegendGradient() {
+      let gradient;
+      
+      switch (colorScheme) {
+        case 'plasma':
+          gradient = 'linear-gradient(to right, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921)';
+          break;
+        case 'viridis':
+          gradient = 'linear-gradient(to right, #440154, #414487, #2a788e, #22a884, #7ad151)';
+          break;
+        case 'inferno':
+          gradient = 'linear-gradient(to right, #000004, #420a68, #932667, #dd513a, #fca50a)';
+          break;
+        case 'turbo':
+          gradient = 'linear-gradient(to right, #30123b, #4676b8, #28bceb, #75fb4c, #f7f056)';
+          break;
+        default:
+          gradient = 'linear-gradient(to right, #0d0887, #7e03a8, #cc4778, #f89540, #f0f921)';
+      }
+      
+      document.getElementById('legend-gradient').style.background = gradient;
+    }
+    
+    // 重置视图
+    function resetView() {
+      if (!heightData) return;
+      
+      // 重置地形缩放
+      document.getElementById('scale-slider').value = 1;
+      document.getElementById('scale-value').textContent = '1.0';
+      heightScale = 1.0;
+      
+      // 重置等高线数量
+      document.getElementById('contour-slider').value = 50;
+      document.getElementById('contour-value').textContent = '50';
+      contourLevels = 20;
+      
+      // 重新渲染地形图像
+      renderTerrainImage();
+      
+      // 更新状态
+      document.getElementById('status-message').textContent = '视图已重置';
+    }
+
+    // 鼠标移动事件，用于更新当前位置
+    document.querySelector('#container canvas').addEventListener('mousemove', (event) => {
+      if (!heightData) return;
+      
+      const canvas = document.querySelector('#container canvas');
+      const rect = canvas.getBoundingClientRect();
+      
+      // 计算缩放比例
+      const scale = Math.min(canvas.width / width, canvas.height / height);
+      const offsetX = (canvas.width - width * scale) / 2;
+      const offsetY = (canvas.height - height * scale) / 2;
+      
+      // 计算鼠标在地形上的位置
+      const terrainX = Math.floor((event.clientX - rect.left - offsetX) / scale);
+      const terrainY = Math.floor((event.clientY - rect.top - offsetY) / scale);
+      
+      // 获取高度值
+      let heightValue = 0;
+      if (terrainX >= 0 && terrainX < width && terrainY >= 0 && terrainY < height) {
+        heightValue = heightData[terrainY * width + terrainX];
+        
+        // 更新UI显示
+        document.getElementById('current-position').textContent = 
+          `${terrainX},${terrainY} (${heightValue}m)`;
+      }
+    });
+    
+    // 动画循环
+    function animate() {
+      requestAnimationFrame(animate);
+      // 更新时间显示
+      updateTime();
+    }
+
+    // 创建示例地形（用于初始演示）
+    function createDemoTerrain() {
+      // 创建一个简单的高度图数据
+      width = 128;
+      height = 128;
+      heightData = new Uint16Array(width * height);
+      
+      // 生成一些随机山丘
+      for (let i = 0; i < width; i++) {
+        for (let j = 0; j < height; j++) {
+          const x = i - width / 2;
+          const y = j - height / 2;
+          
+          // 创建几个高斯山丘
+          let h = 0;
+          h += 5000 * Math.exp(-(x*x + y*y) / 1000);
+          h += 3000 * Math.exp(-((x+20)*(x+20) + (y-20)*(y-20)) / 800);
+          h += 2000 * Math.exp(-((x-30)*(x-30) + (y+30)*(y+30)) / 600);
+          
+          // 添加一些噪声
+          h += Math.random() * 500;
+          
+          heightData[j * width + i] = Math.floor(h);
+        }
+      }
+      
+      // 处理地形数据
+      processTerrain();
+      
+      // 更新状态
+      document.getElementById('status-message').textContent = '已加载演示地形';
+    }
+    
+    // 在页面加载后创建演示地形
+    setTimeout(createDemoTerrain, 2500);
+    
+    // 添加鼠标右键事件，用于测量距离
+    let measureStartPoint = null;
+    let measureLine = null;
+    let measureText = null;
+    
+    renderer.domElement.addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      
+      if (!terrain || !heightData) return;
+      
+      // 计算鼠标位置的标准化设备坐标
+      const mouse = new THREE.Vector2();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      // 创建射线
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      
+      // 检测射线与地形的交叉
+      const intersects = raycaster.intersectObject(terrain);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        
+        if (!measureStartPoint) {
+          // 设置起点
+          measureStartPoint = point.clone();
+          
+          // 创建标记点
+          const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+          const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+          const marker = new THREE.Mesh(geometry, material);
+          marker.position.copy(point);
+          scene.add(marker);
+          
+          document.getElementById('status-message').textContent = '已设置测量起点，右键点击设置终点';
+        } else {
+          // 设置终点并计算距离
+          const distance = measureStartPoint.distanceTo(point);
+          
+          // 创建测量线
+          const lineGeometry = new THREE.BufferGeometry().setFromPoints([measureStartPoint, point]);
+          const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+          
+          if (measureLine) {
+            scene.remove(measureLine);
+          }
+          
+          measureLine = new THREE.Line(lineGeometry, lineMaterial);
+          scene.add(measureLine);
+          
+          // 创建终点标记
+          const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+          const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+          const marker = new THREE.Mesh(geometry, material);
+          marker.position.copy(point);
+          scene.add(marker);
+          
+          // 显示距离
+          document.getElementById('status-message').textContent = 
+            `测量距离: ${distance.toFixed(2)} 单位`;
+          
+          // 重置起点，以便下次测量
+          measureStartPoint = null;
+        }
+      }
+    });
+    
+    // 添加鼠标移动事件，更新位置显示
+    let activeTarget = null;
+    
+    renderer.domElement.addEventListener('mousemove', (event) => {
+      if (!terrain || !heightData) return;
+      
+      const mouse = new THREE.Vector2();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      
+      const intersects = raycaster.intersectObject(terrain);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        document.getElementById('mouse-position').textContent = 
+          `X: ${Math.round(point.x)}, Y: ${Math.round(point.z)}, H: ${Math.round(point.y)}m`;
+      }
+    });
+    
+    // 添加点击事件，创建十字准星
+    renderer.domElement.addEventListener('click', (event) => {
+      if (!terrain || !heightData) return;
+      
+      const mouse = new THREE.Vector2();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+      
+      const intersects = raycaster.intersectObject(terrain);
+      
+      if (intersects.length > 0) {
+        if (activeTarget) {
+          activeTarget.remove();
+        }
+        
+        const crosshair = document.createElement('div');
+        crosshair.className = 'crosshair';
+        crosshair.style.left = event.clientX + 'px';
+        crosshair.style.top = event.clientY + 'px';
+        
+        const horizontal = document.createElement('div');
+        horizontal.className = 'crosshair-h';
+        const vertical = document.createElement('div');
+        vertical.className = 'crosshair-v';
+        
+        crosshair.appendChild(horizontal);
+        crosshair.appendChild(vertical);
+        document.body.appendChild(crosshair);
+        
+        activeTarget = crosshair;
+      }
+    });
+
+    // 添加键盘事件，用于取消测量
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        // 取消测量
+        measureStartPoint = null;
+        
+        if (measureLine) {
+          scene.remove(measureLine);
+          measureLine = null;
+        }
+        
+        document.getElementById('status-message').textContent = '测量已取消';
+      }
+    });
+  </script>
+</body>
+</html>
